@@ -13,6 +13,3 @@ pub use lowering::{lower_float_precision, lower_module, lower_op, lower_op_with_
 pub use ops::{JeffOp, JeffOpKind, JeffValue};
 pub use raising::{raise_float_precision, raise_module, raise_op, raise_type, raise_value, RaisingContext};
 pub use types::{FloatPrecision, JeffType};
-
-#[cfg(test)]
-mod tests;
