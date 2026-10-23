@@ -1,4 +1,5 @@
 use crate::types::JeffType;
+use pliron::derive::pliron_op;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum JeffOpKind {
@@ -54,6 +55,21 @@ pub enum JeffOpKind {
     ScfFor,
     ScfWhile,
 }
+
+#[pliron_op(name = "jeff.qubit_alloc", format, verifier = "succ")]
+pub struct QubitAllocOp;
+
+#[pliron_op(name = "jeff.qubit_free", format, verifier = "succ")]
+pub struct QubitFreeOp;
+
+#[pliron_op(name = "jeff.qubit_measure", format, verifier = "succ")]
+pub struct QubitMeasureOp;
+
+#[pliron_op(name = "jeff.qureg_alloc", format, verifier = "succ")]
+pub struct QuregAllocOp;
+
+#[pliron_op(name = "jeff.func_call", format, verifier = "succ")]
+pub struct FuncCallOp;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JeffValue {

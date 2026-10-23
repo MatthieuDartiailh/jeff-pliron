@@ -1,5 +1,7 @@
 use std::fmt;
 
+use pliron::derive::pliron_type;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum FloatPrecision {
     Float32,
@@ -19,6 +21,45 @@ impl fmt::Display for FloatPrecision {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.bits())
     }
+}
+
+#[pliron_type(name = "jeff.qubit", format, generate_get = true, verifier = "succ")]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct QubitType;
+
+#[pliron_type(name = "jeff.qureg", format, generate_get = true, verifier = "succ")]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct QuregType {
+    pub length: u32,
+    pub is_dynamic: bool,
+}
+
+#[pliron_type(name = "jeff.int", format, generate_get = true, verifier = "succ")]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct IntType {
+    pub bits: u8,
+}
+
+#[pliron_type(name = "jeff.intArray", format, generate_get = true, verifier = "succ")]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct IntArrayType {
+    pub bits: u8,
+    pub length: u32,
+    pub is_dynamic: bool,
+}
+
+#[pliron_type(name = "jeff.float", format, generate_get = true, verifier = "succ")]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct FloatType {
+    pub bits: u8,
+}
+
+#[pliron_type(name = "jeff.floatArray", format, generate_get = true, verifier = "succ")]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct FloatArrayType {
+    pub bits: u8,
+    pub length: u32,
+    pub is_dynamic: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
