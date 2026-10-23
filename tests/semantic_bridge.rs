@@ -15,17 +15,16 @@ fn type_semantics_round_trip() {
 
     assert_eq!(qubit.to_string(), "!jeff.qubit");
     assert_eq!(int.to_string(), "!jeff.int<8>");
-    assert_eq!(
-        float_array.to_string(),
-        "!jeff.floatArray<64, static(16)>"
-    );
+    assert_eq!(float_array.to_string(), "!jeff.floatArray<64, static(16)>");
     assert_eq!(lower_type(&qubit).unwrap(), "!jeff.qubit");
 }
 
 #[test]
 fn value_lowering_keeps_semantics() {
     let value = JeffValue {
-        ty: JeffType::Float { precision: FloatPrecision::Float32 },
+        ty: JeffType::Float {
+            precision: FloatPrecision::Float32,
+        },
         name: Some("angle".to_string()),
         index: None,
     };

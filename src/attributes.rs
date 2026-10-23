@@ -16,7 +16,7 @@ pub struct GateMetadata {
     pub metadata: Vec<JeffMeta>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct StringTable {
     pub entries: Vec<String>,
     index: HashMap<String, usize>,
@@ -24,10 +24,7 @@ pub struct StringTable {
 
 impl StringTable {
     pub fn new() -> Self {
-        Self {
-            entries: Vec::new(),
-            index: HashMap::new(),
-        }
+        Self::default()
     }
 
     pub fn intern(&mut self, value: impl Into<String>) -> usize {

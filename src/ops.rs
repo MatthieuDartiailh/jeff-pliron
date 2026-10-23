@@ -65,11 +65,32 @@ pub struct QubitFreeOp;
 #[pliron_op(name = "jeff.qubit_measure", format, verifier = "succ")]
 pub struct QubitMeasureOp;
 
+#[pliron_op(name = "jeff.qubit_gate", format, verifier = "succ")]
+pub struct QubitGateOp;
+
 #[pliron_op(name = "jeff.qureg_alloc", format, verifier = "succ")]
 pub struct QuregAllocOp;
 
+#[pliron_op(name = "jeff.qureg_length", format, verifier = "succ")]
+pub struct QuregLengthOp;
+
+#[pliron_op(name = "jeff.scf_switch", format, verifier = "succ")]
+pub struct ScfSwitchOp;
+
+#[pliron_op(name = "jeff.scf_for", format, verifier = "succ")]
+pub struct ScfForOp;
+
+#[pliron_op(name = "jeff.scf_while", format, verifier = "succ")]
+pub struct ScfWhileOp;
+
 #[pliron_op(name = "jeff.func_call", format, verifier = "succ")]
 pub struct FuncCallOp;
+
+#[pliron_op(name = "jeff.func_decl", format, verifier = "succ")]
+pub struct FuncDeclOp;
+
+#[pliron_op(name = "jeff.func_def", format, verifier = "succ")]
+pub struct FuncDefOp;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JeffValue {
@@ -122,42 +143,20 @@ impl JeffOp {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct JeffRegion {
     pub name: Option<String>,
     pub ops: Vec<JeffOp>,
     pub metadata: Vec<crate::attributes::JeffMeta>,
 }
 
-impl Default for JeffRegion {
-    fn default() -> Self {
-        Self {
-            name: None,
-            ops: Vec::new(),
-            metadata: Vec::new(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct JeffFunction {
     pub name: Option<String>,
     pub arguments: Vec<JeffValue>,
     pub results: Vec<JeffValue>,
     pub regions: Vec<JeffRegion>,
     pub metadata: Vec<crate::attributes::JeffMeta>,
-}
-
-impl Default for JeffFunction {
-    fn default() -> Self {
-        Self {
-            name: None,
-            arguments: Vec::new(),
-            results: Vec::new(),
-            regions: Vec::new(),
-            metadata: Vec::new(),
-        }
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

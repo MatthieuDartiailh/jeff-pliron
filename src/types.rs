@@ -54,7 +54,12 @@ pub struct FloatType {
     pub bits: u8,
 }
 
-#[pliron_type(name = "jeff.floatArray", format, generate_get = true, verifier = "succ")]
+#[pliron_type(
+    name = "jeff.floatArray",
+    format,
+    generate_get = true,
+    verifier = "succ"
+)]
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct FloatArrayType {
     pub bits: u8,
@@ -65,11 +70,23 @@ pub struct FloatArrayType {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum JeffType {
     Qubit,
-    Qureg { length: Option<u32> },
-    Int { bits: u8 },
-    IntArray { bits: u8, length: Option<u32> },
-    Float { precision: FloatPrecision },
-    FloatArray { precision: FloatPrecision, length: Option<u32> },
+    Qureg {
+        length: Option<u32>,
+    },
+    Int {
+        bits: u8,
+    },
+    IntArray {
+        bits: u8,
+        length: Option<u32>,
+    },
+    Float {
+        precision: FloatPrecision,
+    },
+    FloatArray {
+        precision: FloatPrecision,
+        length: Option<u32>,
+    },
 }
 
 impl fmt::Display for JeffType {
@@ -80,14 +97,23 @@ impl fmt::Display for JeffType {
             Self::Qureg { length: Some(len) } => write!(f, "!jeff.qureg<{len}>"),
             Self::Int { bits } => write!(f, "!jeff.int<{bits}>"),
             Self::IntArray { bits, length: None } => write!(f, "!jeff.intArray<{bits}, dynamic>"),
-            Self::IntArray { bits, length: Some(len) } => {
+            Self::IntArray {
+                bits,
+                length: Some(len),
+            } => {
                 write!(f, "!jeff.intArray<{bits}, static({len})>")
             }
             Self::Float { precision } => write!(f, "!jeff.float<{precision}>"),
-            Self::FloatArray { precision, length: None } => {
+            Self::FloatArray {
+                precision,
+                length: None,
+            } => {
                 write!(f, "!jeff.floatArray<{precision}, dynamic>")
             }
-            Self::FloatArray { precision, length: Some(len) } => {
+            Self::FloatArray {
+                precision,
+                length: Some(len),
+            } => {
                 write!(f, "!jeff.floatArray<{precision}, static({len})>")
             }
         }
@@ -129,11 +155,19 @@ mod tests {
         assert_eq!(JeffType::Qubit.to_string(), "!jeff.qubit");
         assert_eq!(JeffType::Int { bits: 8 }.to_string(), "!jeff.int<8>");
         assert_eq!(
-            JeffType::IntArray { bits: 8, length: None }.to_string(),
+            JeffType::IntArray {
+                bits: 8,
+                length: None
+            }
+            .to_string(),
             "!jeff.intArray<8, dynamic>"
         );
         assert_eq!(
-            JeffType::FloatArray { precision: FloatPrecision::Float64, length: Some(16) }.to_string(),
+            JeffType::FloatArray {
+                precision: FloatPrecision::Float64,
+                length: Some(16)
+            }
+            .to_string(),
             "!jeff.floatArray<64, static(16)>"
         );
     }

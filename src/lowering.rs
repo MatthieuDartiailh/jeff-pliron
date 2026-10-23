@@ -41,10 +41,10 @@ pub fn lower_op(op: &JeffOp) -> JeffResult<String> {
 pub fn lower_value_index(value: &JeffValue, ctx: &mut LoweringContext) -> JeffResult<usize> {
     let idx = ctx.value_map.len();
     ctx.value_map.push(idx);
-    if let Some(name) = value.name.as_ref() {
-        if !name.is_empty() {
-            ctx.function_map.entry(name.clone()).or_insert(idx);
-        }
+    if let Some(name) = value.name.as_ref()
+        && !name.is_empty()
+    {
+        ctx.function_map.entry(name.clone()).or_insert(idx);
     }
     Ok(idx)
 }
