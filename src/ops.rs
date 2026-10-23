@@ -56,6 +56,64 @@ pub enum JeffOpKind {
     ScfWhile,
 }
 
+impl JeffOpKind {
+    pub fn semantic_name(&self) -> &'static str {
+        match self {
+            Self::QubitAlloc => "jeff.qubit_alloc",
+            Self::QubitFree => "jeff.qubit_free",
+            Self::QubitFreeZero => "jeff.qubit_free_zero",
+            Self::QubitMeasure => "jeff.qubit_measure",
+            Self::QubitMeasureNd => "jeff.qubit_measure_nd",
+            Self::QubitReset => "jeff.qubit_reset",
+            Self::GPhase => "jeff.gphase",
+            Self::I => "jeff.i",
+            Self::X => "jeff.x",
+            Self::Y => "jeff.y",
+            Self::Z => "jeff.z",
+            Self::S => "jeff.s",
+            Self::T => "jeff.t",
+            Self::R1 => "jeff.r1",
+            Self::Rx => "jeff.rx",
+            Self::Ry => "jeff.ry",
+            Self::Rz => "jeff.rz",
+            Self::H => "jeff.h",
+            Self::U => "jeff.u",
+            Self::Swap => "jeff.swap",
+            Self::Ppr => "jeff.ppr",
+            Self::Custom => "jeff.custom",
+            Self::QuregAlloc => "jeff.qureg_alloc",
+            Self::QuregFree => "jeff.qureg_free",
+            Self::QuregFreeZero => "jeff.qureg_free_zero",
+            Self::QuregExtractIndex => "jeff.qureg_extract_index",
+            Self::QuregInsertIndex => "jeff.qureg_insert_index",
+            Self::QuregExtractSlice => "jeff.qureg_extract_slice",
+            Self::QuregInsertSlice => "jeff.qureg_insert_slice",
+            Self::QuregLength => "jeff.qureg_length",
+            Self::QuregSplit => "jeff.qureg_split",
+            Self::QuregJoin => "jeff.qureg_join",
+            Self::QuregCreate => "jeff.qureg_create",
+            Self::IntConst => "jeff.int_const",
+            Self::IntAdd => "jeff.int_add",
+            Self::IntSub => "jeff.int_sub",
+            Self::IntMul => "jeff.int_mul",
+            Self::IntDiv => "jeff.int_div",
+            Self::IntCmp => "jeff.int_cmp",
+            Self::IntBitAnd => "jeff.int_bitand",
+            Self::IntBitOr => "jeff.int_bitor",
+            Self::IntBitXor => "jeff.int_bitxor",
+            Self::IntSelect => "jeff.int_select",
+            Self::FloatConst => "jeff.float_const",
+            Self::FloatAdd => "jeff.float_add",
+            Self::FloatMul => "jeff.float_mul",
+            Self::FloatCmp => "jeff.float_cmp",
+            Self::FuncCall => "jeff.func_call",
+            Self::ScfSwitch => "jeff.scf_switch",
+            Self::ScfFor => "jeff.scf_for",
+            Self::ScfWhile => "jeff.scf_while",
+        }
+    }
+}
+
 #[pliron_op(name = "jeff.qubit_alloc", format, verifier = "succ")]
 pub struct QubitAllocOp;
 
@@ -141,6 +199,18 @@ impl JeffOp {
         self.name = Some(name.into());
         self
     }
+
+    pub fn with_metadata(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
+        self.metadata.push(crate::attributes::JeffMeta {
+            name: name.into(),
+            value: value.into(),
+        });
+        self
+    }
+
+    pub fn semantic_name(&self) -> &'static str {
+        self.kind.semantic_name()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
@@ -175,5 +245,50 @@ impl Default for JeffModule {
             functions: Vec::new(),
             metadata: Vec::new(),
         }
+    }
+}
+
+impl JeffModule {
+    pub fn with_function(mut self, function: JeffFunction) -> Self {
+        self.functions.push(function);
+        self
+    }
+
+    pub fn with_metadata(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
+        self.metadata.push(crate::attributes::JeffMeta {
+            name: name.into(),
+            value: value.into(),
+        });
+        self
+    }
+}
+
+impl JeffFunction {
+    pub fn with_region(mut self, region: JeffRegion) -> Self {
+        self.regions.push(region);
+        self
+    }
+
+    pub fn with_metadata(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
+        self.metadata.push(crate::attributes::JeffMeta {
+            name: name.into(),
+            value: value.into(),
+        });
+        self
+    }
+}
+
+impl JeffRegion {
+    pub fn with_op(mut self, op: JeffOp) -> Self {
+        self.ops.push(op);
+        self
+    }
+
+    pub fn with_metadata(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
+        self.metadata.push(crate::attributes::JeffMeta {
+            name: name.into(),
+            value: value.into(),
+        });
+        self
     }
 }

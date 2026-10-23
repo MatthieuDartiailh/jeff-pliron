@@ -8,6 +8,7 @@ use crate::{
 pub struct RaisingContext {
     pub name_to_index: std::collections::HashMap<String, usize>,
     pub value_to_index: std::collections::HashMap<String, usize>,
+    pub op_to_index: std::collections::HashMap<String, usize>,
 }
 
 pub fn raise_module(_items: &[JeffOp]) -> JeffResult<Vec<JeffOp>> {
@@ -46,4 +47,8 @@ pub fn raise_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
 
 pub fn raise_module_semantic(module: &JeffModule) -> JeffResult<JeffModule> {
     Ok(module.clone())
+}
+
+pub fn raise_string_table(entries: &[String]) -> JeffResult<Vec<String>> {
+    Ok(entries.to_vec())
 }
