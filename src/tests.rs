@@ -37,7 +37,8 @@ fn value_lowering_keeps_semantics() {
 #[test]
 fn module_lowering_is_stable() {
     let lowered = lower_module("demo").unwrap();
-    assert_eq!(lowered.kind, JeffOpKind::FuncCall);
+    assert!(matches!(lowered.kind, JeffOpKind::FuncCall));
+    assert_eq!(lowered.outputs.len(), 0);
 }
 
 #[test]

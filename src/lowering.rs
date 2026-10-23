@@ -41,9 +41,11 @@ pub fn lower_value_index(value: &JeffValue, ctx: &mut LoweringContext) -> JeffRe
 }
 
 pub fn lower_op_with_context(op: &JeffOp, ctx: &mut LoweringContext) -> JeffResult<usize> {
-    let _ = op;
     let _ = ctx;
-    Err(JeffPlironError::UnsupportedOp("not implemented".to_string()))
+    Err(JeffPlironError::UnsupportedOp(format!(
+        "not implemented for op kind: {:?}",
+        op.kind
+    )))
 }
 
 pub fn lower_float_precision(precision: FloatPrecision) -> JeffResult<u8> {

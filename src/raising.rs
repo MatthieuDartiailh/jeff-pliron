@@ -1,6 +1,6 @@
 use crate::{
     error::JeffResult,
-    ops::{JeffOp, JeffOpKind, JeffValue},
+    ops::{JeffOp, JeffValue},
     types::{JeffType, FloatPrecision},
 };
 
@@ -29,7 +29,7 @@ pub fn raise_float_precision(bits: u8) -> JeffResult<FloatPrecision> {
     match bits {
         32 => Ok(FloatPrecision::Float32),
         64 => Ok(FloatPrecision::Float64),
-        _ => Err(crate::error::JeffPlironError::LoweringFailed(format!(
+        _ => Err(crate::error::JeffPlironError::RaisingFailed(format!(
             "unsupported float precision bits: {bits}"
         ))),
     }

@@ -12,6 +12,8 @@ pub enum JeffPlironError {
     UnsupportedOp(String),
     #[error("lowering failed: {0}")]
     LoweringFailed(String),
+    #[error("raising failed: {0}")]
+    RaisingFailed(String),
 }
 
 pub type JeffResult<T> = Result<T, JeffPlironError>;
