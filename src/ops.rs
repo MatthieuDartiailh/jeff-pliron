@@ -1,4 +1,4 @@
-use crate::types::JeffType;
+use crate::{attributes::StringTable, types::JeffType};
 use pliron::derive::pliron_op;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -75,11 +75,31 @@ pub struct FuncCallOp;
 pub struct JeffValue {
     pub ty: JeffType,
     pub name: Option<String>,
+    pub index: Option<usize>,
+}
+
+impl JeffValue {
+    pub fn new(ty: JeffType) -> Self {
+        Self {
+            ty,
+            name: None,
+            index: None,
+        }
+    }
+
+    pub fn named(ty: JeffType, name: impl Into<String>) -> Self {
+        Self {
+            ty,
+            name: Some(name.into()),
+            index: None,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JeffOp {
     pub kind: JeffOpKind,
+    pub name: Option<String>,
     pub inputs: Vec<JeffValue>,
     pub outputs: Vec<JeffValue>,
     pub metadata: Vec<crate::attributes::JeffMeta>,
@@ -89,8 +109,71 @@ impl JeffOp {
     pub fn new(kind: JeffOpKind) -> Self {
         Self {
             kind,
+            name: None,
             inputs: Vec::new(),
             outputs: Vec::new(),
+            metadata: Vec::new(),
+        }
+    }
+
+    pub fn with_name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
+        self
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct JeffRegion {
+    pub name: Option<String>,
+    pub ops: Vec<JeffOp>,
+    pub metadata: Vec<crate::attributes::JeffMeta>,
+}
+
+impl Default for JeffRegion {
+    fn default() -> Self {
+        Self {
+            name: None,
+            ops: Vec::new(),
+            metadata: Vec::new(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct JeffFunction {
+    pub name: Option<String>,
+    pub arguments: Vec<JeffValue>,
+    pub results: Vec<JeffValue>,
+    pub regions: Vec<JeffRegion>,
+    pub metadata: Vec<crate::attributes::JeffMeta>,
+}
+
+impl Default for JeffFunction {
+    fn default() -> Self {
+        Self {
+            name: None,
+            arguments: Vec::new(),
+            results: Vec::new(),
+            regions: Vec::new(),
+            metadata: Vec::new(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct JeffModule {
+    pub name: Option<String>,
+    pub strings: StringTable,
+    pub functions: Vec<JeffFunction>,
+    pub metadata: Vec<crate::attributes::JeffMeta>,
+}
+
+impl Default for JeffModule {
+    fn default() -> Self {
+        Self {
+            name: None,
+            strings: StringTable::new(),
+            functions: Vec::new(),
             metadata: Vec::new(),
         }
     }

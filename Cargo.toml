@@ -1,9 +1,9 @@
 [package]
 name = "jeff-pliron"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "Pliron dialect bridge for the JEFF binary semantic model"
-license = "MIT OR Apache-2.0"
+license = "BSD-3-Clause"
 
 [dependencies]
 pliron = "0.20.0"

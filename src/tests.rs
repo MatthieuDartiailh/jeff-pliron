@@ -27,6 +27,7 @@ fn value_lowering_keeps_semantics() {
     let value = JeffValue {
         ty: JeffType::Float { precision: FloatPrecision::Float32 },
         name: Some("angle".to_string()),
+        index: None,
     };
 
     let lowered = lower_value(&value).unwrap();

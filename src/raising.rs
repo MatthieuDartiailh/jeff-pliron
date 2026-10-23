@@ -1,16 +1,17 @@
 use crate::{
     error::JeffResult,
-    ops::{JeffOp, JeffValue},
-    types::{JeffType, FloatPrecision},
+    ops::{JeffFunction, JeffModule, JeffOp, JeffRegion, JeffValue},
+    types::{FloatPrecision, JeffType},
 };
 
 #[derive(Clone, Debug, Default)]
 pub struct RaisingContext {
     pub name_to_index: std::collections::HashMap<String, usize>,
+    pub value_to_index: std::collections::HashMap<String, usize>,
 }
 
 pub fn raise_module(_items: &[JeffOp]) -> JeffResult<Vec<JeffOp>> {
-    Ok(Vec::new())
+    Ok(_items.to_vec())
 }
 
 pub fn raise_value(value: &JeffValue) -> JeffResult<JeffValue> {
@@ -33,4 +34,16 @@ pub fn raise_float_precision(bits: u8) -> JeffResult<FloatPrecision> {
             "unsupported float precision bits: {bits}"
         ))),
     }
+}
+
+pub fn raise_function(function: &JeffFunction) -> JeffResult<JeffFunction> {
+    Ok(function.clone())
+}
+
+pub fn raise_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
+    Ok(region.clone())
+}
+
+pub fn raise_module_semantic(module: &JeffModule) -> JeffResult<JeffModule> {
+    Ok(module.clone())
 }

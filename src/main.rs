@@ -1,3 +1,3 @@
 fn main() {
-    println!("Hello, world!");
+    println!("jeff-pliron is a library crate");
 }
