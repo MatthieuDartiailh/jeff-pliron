@@ -5,7 +5,7 @@ use jeff::reader::optype::{
 };
 use jeff::reader::{
     Function as UpstreamFunction, FunctionIOValue as UpstreamFunctionIOValue, Module as UpstreamModule,
-    Operation as UpstreamOperation, ReadJeff, Region as UpstreamRegion, WireValue as UpstreamWireValue,
+    Operation as UpstreamOperation, Region as UpstreamRegion, WireValue as UpstreamWireValue,
 };
 use jeff::types::Type as UpstreamType;
 
@@ -50,7 +50,7 @@ fn canonicalize_function_name(function: &JeffFunction, fallback: usize) -> Strin
     function.name.clone().unwrap_or_else(|| format!("func{fallback}"))
 }
 
-trait UpstreamValueLike {
+pub trait UpstreamValueLike {
     fn jeff_type(&self) -> UpstreamType;
 }
 
@@ -94,6 +94,7 @@ fn lower_upstream_gate_kind(gate_type: GateOpType<'_>) -> JeffOpKind {
         GateOpType::WellKnown(WellKnownGate::H) => JeffOpKind::H,
         GateOpType::WellKnown(WellKnownGate::U) => JeffOpKind::U,
         GateOpType::WellKnown(WellKnownGate::Swap) => JeffOpKind::Swap,
+        GateOpType::WellKnown(_) => JeffOpKind::Custom,
         GateOpType::Custom { name, .. } => match name.to_ascii_lowercase().as_str() {
             "cx" | "cnot" => JeffOpKind::X,
             "swap" => JeffOpKind::Swap,
@@ -215,6 +216,7 @@ pub fn lower_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
             QubitOp::MeasureNd => JeffOpKind::QubitMeasureNd,
             QubitOp::Reset => JeffOpKind::QubitReset,
             QubitOp::Gate(gate) => lower_upstream_gate_kind(gate.gate_type),
+            _ => JeffOpKind::Custom,
         },
         OpType::QubitRegisterOp(qureg_op) => match qureg_op {
             QubitRegisterOp::Alloc => JeffOpKind::QuregAlloc,
@@ -228,6 +230,7 @@ pub fn lower_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
             QubitRegisterOp::Split => JeffOpKind::QuregSplit,
             QubitRegisterOp::Join => JeffOpKind::QuregJoin,
             QubitRegisterOp::Create => JeffOpKind::QuregCreate,
+            _ => JeffOpKind::Custom,
         },
         OpType::IntOp(int_op) => match int_op {
             jeff::reader::optype::IntOp::Const1(_) => JeffOpKind::IntConst,
@@ -258,6 +261,7 @@ pub fn lower_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
             jeff::reader::optype::IntOp::ExtS | jeff::reader::optype::IntOp::ExtU => JeffOpKind::IntSelect,
             jeff::reader::optype::IntOp::Trunc => JeffOpKind::IntSelect,
             jeff::reader::optype::IntOp::ToFloatS | jeff::reader::optype::IntOp::ToFloatU => JeffOpKind::IntCmp,
+            _ => JeffOpKind::Custom,
         },
         OpType::IntArrayOp(_) => JeffOpKind::IntConst,
         OpType::FloatOp(float_op) => match float_op {
@@ -284,6 +288,7 @@ pub fn lower_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
             ControlFlowOp::While { .. } => JeffOpKind::ScfWhile,
         },
         OpType::FuncOp(FuncOp { .. }) => JeffOpKind::FuncCall,
+        _ => JeffOpKind::Custom,
     };
 
     let mut inputs = Vec::new();
@@ -367,34 +372,22 @@ pub fn lower_upstream_function(function: &UpstreamFunction<'_>) -> JeffResult<Je
     match function {
         UpstreamFunction::Declaration(decl) => {
             for value in decl.input_types() {
-                arguments.push(lower_upstream_function_io(value?).unwrap_or(JeffValue {
-                    ty: JeffType::Qubit,
-                    name: None,
-                    index: None,
-                }));
+                let value = value.map_err(|err| JeffPlironError::LoweringFailed(err.to_string()))?;
+                arguments.push(lower_upstream_function_io(value)?);
             }
             for value in decl.output_types() {
-                results.push(lower_upstream_function_io(value?).unwrap_or(JeffValue {
-                    ty: JeffType::Qubit,
-                    name: None,
-                    index: None,
-                }));
+                let value = value.map_err(|err| JeffPlironError::LoweringFailed(err.to_string()))?;
+                results.push(lower_upstream_function_io(value)?);
             }
         }
         UpstreamFunction::Definition(def) => {
             for value in def.input_types() {
-                arguments.push(lower_upstream_function_io(value?).unwrap_or(JeffValue {
-                    ty: JeffType::Qubit,
-                    name: None,
-                    index: None,
-                }));
+                let value = value.map_err(|err| JeffPlironError::LoweringFailed(err.to_string()))?;
+                arguments.push(lower_upstream_function_io(value)?);
             }
             for value in def.output_types() {
-                results.push(lower_upstream_function_io(value?).unwrap_or(JeffValue {
-                    ty: JeffType::Qubit,
-                    name: None,
-                    index: None,
-                }));
+                let value = value.map_err(|err| JeffPlironError::LoweringFailed(err.to_string()))?;
+                results.push(lower_upstream_function_io(value)?);
             }
             regions.push(lower_upstream_region(&def.body())?);
         }
