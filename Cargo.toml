@@ -1,0 +1,10 @@
+[package]
+name = "jeff-pliron"
+version = "0.1.0"
+edition = "2024"
+description = "Pliron dialect bridge for the JEFF binary semantic model"
+license = "BSD-3-Clause"
+
+[dependencies]
+pliron = "0.20.0"
+thiserror = "2"
