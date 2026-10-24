@@ -1,6 +1,5 @@
 use jeff_pliron::{
-    lowering::{lower_module, lower_type, lower_value},
-    ops::{JeffOp, JeffOpKind, JeffValue},
+    ops::{JeffFunction, JeffModule, JeffOp, JeffOpKind, JeffRegion, JeffValue},
     types::{FloatPrecision, JeffType},
 };
 
@@ -16,7 +15,7 @@ fn type_semantics_round_trip() {
     assert_eq!(qubit.to_string(), "!jeff.qubit");
     assert_eq!(int.to_string(), "!jeff.int<8>");
     assert_eq!(float_array.to_string(), "!jeff.floatArray<64, static(16)>");
-    assert_eq!(lower_type(&qubit).unwrap(), "!jeff.qubit");
+    assert_eq!(jeff_pliron::lower_type(&qubit).unwrap(), JeffType::Qubit);
 }
 
 #[test]
@@ -29,16 +28,39 @@ fn value_lowering_keeps_semantics() {
         index: None,
     };
 
-    let lowered = lower_value(&value).unwrap();
-    assert!(lowered.contains("angle"));
-    assert!(lowered.contains("!jeff.float<32>"));
+    let lowered = jeff_pliron::lower_value(&value).unwrap();
+    assert_eq!(lowered.name, Some("angle".to_string()));
+    assert_eq!(
+        lowered.ty,
+        JeffType::Float {
+            precision: FloatPrecision::Float32,
+        }
+    );
 }
 
 #[test]
 fn module_lowering_is_stable() {
-    let lowered = lower_module("demo").unwrap();
-    assert!(matches!(lowered.kind, JeffOpKind::FuncCall));
-    assert_eq!(lowered.outputs.len(), 0);
+    let module = JeffModule {
+        name: Some("demo".to_string()),
+        strings: jeff_pliron::StringTable::new(),
+        functions: vec![JeffFunction {
+            name: Some("entry".to_string()),
+            arguments: vec![],
+            results: vec![],
+            regions: vec![JeffRegion {
+                name: Some("entry_region".to_string()),
+                ops: vec![JeffOp::new(JeffOpKind::QubitAlloc)],
+                metadata: vec![],
+            }],
+            metadata: vec![],
+        }],
+        metadata: vec![],
+    };
+
+    let lowered = jeff_pliron::lower_module(&module).unwrap();
+    assert_eq!(lowered.name, Some("demo".to_string()));
+    assert_eq!(lowered.functions.len(), 1);
+    assert_eq!(lowered.functions[0].regions.len(), 1);
 }
 
 #[test]

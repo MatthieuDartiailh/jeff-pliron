@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     error::JeffResult,
     ops::{JeffFunction, JeffModule, JeffOp, JeffRegion, JeffValue},
@@ -6,13 +8,14 @@ use crate::{
 
 #[derive(Clone, Debug, Default)]
 pub struct RaisingContext {
-    pub name_to_index: std::collections::HashMap<String, usize>,
-    pub value_to_index: std::collections::HashMap<String, usize>,
-    pub op_to_index: std::collections::HashMap<String, usize>,
+    pub name_to_index: HashMap<String, usize>,
+    pub value_to_index: HashMap<String, usize>,
+    pub op_to_index: HashMap<String, usize>,
+    pub function_to_index: HashMap<String, usize>,
 }
 
-pub fn raise_module(_items: &[JeffOp]) -> JeffResult<Vec<JeffOp>> {
-    Ok(_items.to_vec())
+pub fn raise_module(items: &[JeffOp]) -> JeffResult<Vec<JeffOp>> {
+    Ok(items.to_vec())
 }
 
 pub fn raise_value(value: &JeffValue) -> JeffResult<JeffValue> {
