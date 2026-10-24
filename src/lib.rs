@@ -11,8 +11,9 @@ pub use dialect::{JEFF_DIALECT_NAME, jeff_dialect_name, register_jeff_dialect};
 pub use error::{JeffPlironError, JeffResult};
 pub use lowering::{
     LoweringContext, lower_float_precision, lower_function, lower_metadata_summary, lower_module,
-    lower_module_semantic, lower_op, lower_op_with_context, lower_region, lower_type, lower_value,
-    lower_value_index,
+    lower_module_semantic, lower_op, lower_op_with_context, lower_region, lower_type,
+    lower_upstream_function, lower_upstream_module, lower_upstream_op, lower_upstream_region,
+    lower_upstream_type, lower_upstream_value, lower_value, lower_value_index,
 };
 pub use ops::{
     FuncCallOp, FuncDeclOp, FuncDefOp, JeffFunction, JeffModule, JeffOp, JeffOpKind, JeffRegion,
