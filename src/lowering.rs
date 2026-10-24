@@ -87,41 +87,39 @@ pub fn lower_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
 }
 
 pub fn lower_module_semantic(module: &JeffModule) -> JeffResult<SemanticLowering> {
-    let value_map = module
-        .functions
-        .iter()
-        .flat_map(|fun| fun.arguments.iter().chain(fun.results.iter()))
-        .filter_map(|value| {
-            value
-                .name
-                .clone()
-                .map(|name| (name, value.index.unwrap_or_default()))
-        })
-        .collect();
+    let mut value_map = HashMap::new();
+    let mut op_map = HashMap::new();
+    let mut function_map = HashMap::new();
+    let mut region_map = HashMap::new();
 
-    let op_map = module
-        .functions
-        .iter()
-        .flat_map(|fun| fun.regions.iter().flat_map(|region| region.ops.iter()))
-        .filter_map(|op| {
-            op.name
-                .clone()
-                .map(|name| (name, op.inputs.len() + op.outputs.len()))
-        })
-        .collect();
+    for (function_idx, function) in module.functions.iter().enumerate() {
+        if let Some(ref name) = function.name {
+            function_map.insert(name.clone(), function_idx);
+        }
 
-    let function_map = module
-        .functions
-        .iter()
-        .filter_map(|fun| fun.name.clone().map(|name| (name, fun.regions.len())))
-        .collect();
+        for (region_idx, region) in function.regions.iter().enumerate() {
+            if let Some(ref name) = region.name {
+                region_map.insert(name.clone(), region_idx);
+            }
 
-    let region_map = module
-        .functions
-        .iter()
-        .flat_map(|fun| fun.regions.iter())
-        .filter_map(|region| region.name.clone().map(|name| (name, region.ops.len())))
-        .collect();
+            for (op_idx, op) in region.ops.iter().enumerate() {
+                if let Some(ref name) = op.name {
+                    op_map.insert(name.clone(), op_idx);
+                }
+            }
+        }
+
+        for (value_idx, value) in function
+            .arguments
+            .iter()
+            .chain(function.results.iter())
+            .enumerate()
+        {
+            if let Some(ref name) = value.name {
+                value_map.insert(name.clone(), value_idx);
+            }
+        }
+    }
 
     Ok(SemanticLowering {
         module: module.clone(),

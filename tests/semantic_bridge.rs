@@ -45,11 +45,11 @@ fn module_lowering_is_stable() {
         strings: jeff_pliron::StringTable::new(),
         functions: vec![JeffFunction {
             name: Some("entry".to_string()),
-            arguments: vec![],
-            results: vec![],
+            arguments: vec![JeffValue::named(JeffType::Qubit, "q0")],
+            results: vec![JeffValue::named(JeffType::Qubit, "q1")],
             regions: vec![JeffRegion {
                 name: Some("entry_region".to_string()),
-                ops: vec![JeffOp::new(JeffOpKind::QubitAlloc)],
+                ops: vec![JeffOp::new(JeffOpKind::QubitAlloc).with_name("alloc0")],
                 metadata: vec![],
             }],
             metadata: vec![],
@@ -61,6 +61,13 @@ fn module_lowering_is_stable() {
     assert_eq!(lowered.name, Some("demo".to_string()));
     assert_eq!(lowered.functions.len(), 1);
     assert_eq!(lowered.functions[0].regions.len(), 1);
+
+    let semantic = jeff_pliron::lower_module_semantic(&module).unwrap();
+    assert_eq!(semantic.function_map.get("entry"), Some(&0));
+    assert_eq!(semantic.region_map.get("entry_region"), Some(&0));
+    assert_eq!(semantic.op_map.get("alloc0"), Some(&0));
+    assert_eq!(semantic.value_map.get("q0"), Some(&0));
+    assert_eq!(semantic.value_map.get("q1"), Some(&1));
 }
 
 #[test]

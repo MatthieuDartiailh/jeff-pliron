@@ -173,6 +173,11 @@ impl JeffValue {
             index: None,
         }
     }
+
+    pub fn with_index(mut self, index: usize) -> Self {
+        self.index = Some(index);
+        self
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -197,6 +202,16 @@ impl JeffOp {
 
     pub fn with_name(mut self, name: impl Into<String>) -> Self {
         self.name = Some(name.into());
+        self
+    }
+
+    pub fn with_input(mut self, value: JeffValue) -> Self {
+        self.inputs.push(value);
+        self
+    }
+
+    pub fn with_output(mut self, value: JeffValue) -> Self {
+        self.outputs.push(value);
         self
     }
 
