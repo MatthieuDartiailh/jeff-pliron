@@ -1,11 +1,30 @@
 use std::fmt;
 
+use jeff_format::types::{self as upstream_types, FloatPrecision as UpstreamFloatPrecision, Type as UpstreamType};
 use pliron::derive::pliron_type;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum FloatPrecision {
     Float32,
     Float64,
+}
+
+impl From<UpstreamFloatPrecision> for FloatPrecision {
+    fn from(value: UpstreamFloatPrecision) -> Self {
+        match value {
+            UpstreamFloatPrecision::Float32 => Self::Float32,
+            UpstreamFloatPrecision::Float64 => Self::Float64,
+        }
+    }
+}
+
+impl From<FloatPrecision> for UpstreamFloatPrecision {
+    fn from(value: FloatPrecision) -> Self {
+        match value {
+            FloatPrecision::Float32 => Self::Float32,
+            FloatPrecision::Float64 => Self::Float64,
+        }
+    }
 }
 
 impl FloatPrecision {
@@ -87,6 +106,42 @@ pub enum JeffType {
         precision: FloatPrecision,
         length: Option<u32>,
     },
+}
+
+impl From<UpstreamType> for JeffType {
+    fn from(value: UpstreamType) -> Self {
+        match value {
+            UpstreamType::Qubit => Self::Qubit,
+            UpstreamType::QubitRegister { length } => Self::Qureg { length },
+            UpstreamType::Int { bits } => Self::Int { bits },
+            UpstreamType::IntArray { bits, length } => Self::IntArray { bits, length },
+            UpstreamType::Float { precision } => Self::Float {
+                precision: precision.into(),
+            },
+            UpstreamType::FloatArray { precision, length } => Self::FloatArray {
+                precision: precision.into(),
+                length,
+            },
+        }
+    }
+}
+
+impl From<JeffType> for UpstreamType {
+    fn from(value: JeffType) -> Self {
+        match value {
+            JeffType::Qubit => Self::Qubit,
+            JeffType::Qureg { length } => Self::QubitRegister { length },
+            JeffType::Int { bits } => Self::Int { bits },
+            JeffType::IntArray { bits, length } => Self::IntArray { bits, length },
+            JeffType::Float { precision } => Self::Float {
+                precision: precision.into(),
+            },
+            JeffType::FloatArray { precision, length } => Self::FloatArray {
+                precision: precision.into(),
+                length,
+            },
+        }
+    }
 }
 
 impl fmt::Display for JeffType {
