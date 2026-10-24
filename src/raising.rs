@@ -49,7 +49,39 @@ pub fn raise_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
 }
 
 pub fn raise_module_semantic(module: &JeffModule) -> JeffResult<JeffModule> {
-    Ok(module.clone())
+    let mut raised = module.clone();
+    let mut ctx = RaisingContext::default();
+
+    for (function_idx, function) in raised.functions.iter_mut().enumerate() {
+        if function.name.is_none() {
+            function.name = Some(format!("func{function_idx}"));
+        }
+        ctx.function_to_index.insert(function.name.clone().unwrap(), function_idx);
+
+        for (region_idx, region) in function.regions.iter_mut().enumerate() {
+            if region.name.is_none() {
+                region.name = Some(format!("region{region_idx}"));
+            }
+            ctx.name_to_index.insert(region.name.clone().unwrap(), region_idx);
+
+            for (op_idx, op) in region.ops.iter_mut().enumerate() {
+                if op.name.is_none() {
+                    op.name = Some(format!("op{op_idx}"));
+                }
+                ctx.op_to_index.insert(op.name.clone().unwrap(), op_idx);
+
+                for (value_idx, value) in op.inputs.iter_mut().chain(op.outputs.iter_mut()).enumerate() {
+                    if value.name.is_none() {
+                        value.name = Some(format!("v{value_idx}"));
+                    }
+                    ctx.value_to_index.insert(value.name.clone().unwrap(), value_idx);
+                    value.index = Some(value_idx);
+                }
+            }
+        }
+    }
+
+    Ok(raised)
 }
 
 pub fn raise_string_table(entries: &[String]) -> JeffResult<Vec<String>> {

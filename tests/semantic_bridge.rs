@@ -61,6 +61,9 @@ fn module_lowering_is_stable() {
     assert_eq!(lowered.name, Some("demo".to_string()));
     assert_eq!(lowered.functions.len(), 1);
     assert_eq!(lowered.functions[0].regions.len(), 1);
+    assert_eq!(lowered.functions[0].arguments[0].name.as_deref(), Some("q0"));
+    assert_eq!(lowered.functions[0].results[0].name.as_deref(), Some("q1"));
+    assert_eq!(lowered.functions[0].regions[0].ops[0].name.as_deref(), Some("alloc0"));
 
     let semantic = jeff_pliron::lower_module_semantic(&module).unwrap();
     assert_eq!(semantic.function_map.get("entry"), Some(&0));
@@ -68,6 +71,45 @@ fn module_lowering_is_stable() {
     assert_eq!(semantic.op_map.get("alloc0"), Some(&0));
     assert_eq!(semantic.value_map.get("q0"), Some(&0));
     assert_eq!(semantic.value_map.get("q1"), Some(&1));
+}
+
+#[test]
+fn module_roundtrips_through_dialect_boundary() {
+    let module = JeffModule {
+        name: Some("demo".to_string()),
+        strings: jeff_pliron::StringTable::new(),
+        functions: vec![JeffFunction {
+            name: Some("main".to_string()),
+            arguments: vec![JeffValue::named(JeffType::Qubit, "q0")],
+            results: vec![JeffValue::named(JeffType::Qubit, "q1")],
+            regions: vec![JeffRegion {
+                name: Some("body".to_string()),
+                ops: vec![
+                    JeffOp::new(JeffOpKind::QubitAlloc)
+                        .with_name("alloc0")
+                        .with_output(JeffValue::named(JeffType::Qubit, "q2")),
+                    JeffOp::new(JeffOpKind::X)
+                        .with_name("gate_x")
+                        .with_input(JeffValue::named(JeffType::Qubit, "q2"))
+                        .with_output(JeffValue::named(JeffType::Qubit, "q3")),
+                ],
+                metadata: vec![],
+            }],
+            metadata: vec![],
+        }],
+        metadata: vec![],
+    };
+
+    let lowered = jeff_pliron::lower_module(&module).unwrap();
+    assert_eq!(lowered.name, Some("demo".to_string()));
+    assert_eq!(lowered.functions[0].name.as_deref(), Some("main"));
+    assert_eq!(lowered.functions[0].regions[0].ops.len(), 2);
+    assert_eq!(lowered.functions[0].regions[0].ops[0].outputs[0].name.as_deref(), Some("q2"));
+    assert_eq!(lowered.functions[0].regions[0].ops[1].inputs[0].name.as_deref(), Some("q2"));
+
+    let raised = jeff_pliron::raise_module_semantic(&lowered).unwrap();
+    assert_eq!(raised.functions[0].regions[0].ops[1].semantic_name(), "jeff.x");
+    assert_eq!(raised.functions[0].regions[0].ops[0].outputs[0].ty, JeffType::Qubit);
 }
 
 #[test]
