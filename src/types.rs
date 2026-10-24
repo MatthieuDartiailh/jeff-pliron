@@ -1,6 +1,6 @@
 use std::fmt;
 
-use jeff_format::types::{self as upstream_types, FloatPrecision as UpstreamFloatPrecision, Type as UpstreamType};
+use jeff::types::{FloatPrecision as UpstreamFloatPrecision, Type as UpstreamType};
 use pliron::derive::pliron_type;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

@@ -1,3 +1,4 @@
+use jeff::types::{FloatPrecision as JeffFloatPrecision, Type as JeffTypeFromCrate};
 use jeff_pliron::{
     ops::{JeffFunction, JeffModule, JeffOp, JeffOpKind, JeffRegion, JeffValue},
     types::{FloatPrecision, JeffType},
@@ -5,17 +6,19 @@ use jeff_pliron::{
 
 #[test]
 fn type_semantics_round_trip() {
-    let qubit = JeffType::Qubit;
-    let int = JeffType::Int { bits: 8 };
-    let float_array = JeffType::FloatArray {
-        precision: FloatPrecision::Float64,
+    let qubit = JeffType::from(JeffTypeFromCrate::Qubit);
+    let int = JeffType::from(JeffTypeFromCrate::Int { bits: 8 });
+    let float_array = JeffType::from(JeffTypeFromCrate::FloatArray {
+        precision: JeffFloatPrecision::Float64,
         length: Some(16),
-    };
+    });
 
     assert_eq!(qubit.to_string(), "!jeff.qubit");
     assert_eq!(int.to_string(), "!jeff.int<8>");
     assert_eq!(float_array.to_string(), "!jeff.floatArray<64, static(16)>");
     assert_eq!(jeff_pliron::lower_type(&qubit).unwrap(), JeffType::Qubit);
+    assert_eq!(JeffTypeFromCrate::from(qubit), JeffTypeFromCrate::Qubit);
+    assert_eq!(JeffTypeFromCrate::from(int), JeffTypeFromCrate::Int { bits: 8 });
 }
 
 #[test]
