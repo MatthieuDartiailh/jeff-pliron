@@ -51,3 +51,17 @@ fn op_metadata_round_trip() {
     assert_eq!(op.metadata.len(), 1);
     assert_eq!(op.metadata[0].name, "gate.name");
 }
+
+#[test]
+fn lowering_context_keeps_stable_value_order() {
+    let mut ctx = jeff_pliron::LoweringContext::default();
+    let value_a = JeffValue::named(JeffType::Qubit, "q0");
+    let value_b = JeffValue::named(JeffType::Qubit, "q0");
+
+    let idx_a = jeff_pliron::lower_value_index(&value_a, &mut ctx).unwrap();
+    let idx_b = jeff_pliron::lower_value_index(&value_b, &mut ctx).unwrap();
+
+    assert_eq!(idx_a, 0);
+    assert_eq!(idx_b, 0);
+    assert_eq!(ctx.value_order.len(), 1);
+}

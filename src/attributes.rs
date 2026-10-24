@@ -1,11 +1,21 @@
 use std::collections::HashMap;
 
+/// A single key/value pair attached to a JEFF operation or region.
+///
+/// JEFF stores metadata as semantic attributes rather than source-span text,
+/// so these entries preserve the binary schema’s string-keyed payloads without
+/// treating them as a textual frontend AST.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JeffMeta {
     pub name: String,
     pub value: String,
 }
 
+/// Gate-specific metadata attached to a JEFF operation.
+///
+/// This mirrors the semantic shape of the JEFF schema: the gate name is optional,
+/// the operation may be adjoint, powers and controls are tracked explicitly, and
+/// auxiliary metadata remains in a structured list rather than a flattened text blob.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GateMetadata {
     pub gate_name: Option<String>,
@@ -16,6 +26,11 @@ pub struct GateMetadata {
     pub metadata: Vec<JeffMeta>,
 }
 
+/// A compact string interning table used by the JEFF dialect.
+///
+/// The table keeps stable IDs for names and metadata keys while preserving a
+/// semantic binary representation, instead of converting the program into a source
+/// file or pseudo-textual IR.
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct StringTable {
     pub entries: Vec<String>,
