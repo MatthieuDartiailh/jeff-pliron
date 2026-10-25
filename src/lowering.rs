@@ -17,13 +17,16 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Default)]
-pub struct LoweringContext {
+pub struct SerializationContext {
     pub value_map: HashMap<String, usize>,
     pub value_order: Vec<String>,
     pub function_map: HashMap<String, usize>,
     pub op_map: HashMap<String, usize>,
     pub region_map: HashMap<String, usize>,
 }
+
+#[deprecated(note = "use SerializationContext instead")]
+pub type LoweringContext = SerializationContext;
 
 #[derive(Clone, Debug, Default)]
 pub struct SemanticLowering {
@@ -67,14 +70,18 @@ impl<'a> UpstreamValueLike for UpstreamFunctionIOValue<'a> {
 }
 
 pub fn serialize_module(module: &JeffModule) -> JeffResult<JeffModule> {
-    lower_module(module)
+    deserialize_module_from_jeff(module)
 }
 
 pub fn deserialize_module(module: &UpstreamModule<'_>) -> JeffResult<JeffModule> {
-    lower_upstream_module(module)
+    deserialize_module_from_upstream(module)
 }
 
 pub fn lower_upstream_module(module: &UpstreamModule<'_>) -> JeffResult<JeffModule> {
+    deserialize_module_from_upstream(module)
+}
+
+pub fn deserialize_module_from_upstream(module: &UpstreamModule<'_>) -> JeffResult<JeffModule> {
     let functions = module
         .functions()
         .map(|function| lower_upstream_function(&function))
@@ -136,9 +143,9 @@ fn lower_upstream_gate_kind(gate_type: GateOpType<'_>) -> JeffOpKind {
     }
 }
 
-pub fn lower_module(module: &JeffModule) -> JeffResult<JeffModule> {
+pub fn deserialize_module_from_jeff(module: &JeffModule) -> JeffResult<JeffModule> {
     let mut lowered = module.clone();
-    let mut ctx = LoweringContext::default();
+    let mut ctx = SerializationContext::default();
 
     for (function_idx, function) in lowered.functions.iter_mut().enumerate() {
         let function_key = canonicalize_function_name(function, function_idx);
@@ -199,15 +206,27 @@ pub fn lower_module(module: &JeffModule) -> JeffResult<JeffModule> {
     Ok(lowered)
 }
 
-pub fn lower_type(ty: &JeffType) -> JeffResult<JeffType> {
+pub fn lower_module(module: &JeffModule) -> JeffResult<JeffModule> {
+    deserialize_module_from_jeff(module)
+}
+
+pub fn serialize_type(ty: &JeffType) -> JeffResult<JeffType> {
     Ok(ty.clone())
 }
 
-pub fn lower_upstream_type(ty: &UpstreamType) -> JeffResult<JeffType> {
+pub fn lower_type(ty: &JeffType) -> JeffResult<JeffType> {
+    serialize_type(ty)
+}
+
+pub fn deserialize_type(ty: &UpstreamType) -> JeffResult<JeffType> {
     Ok(JeffType::from(*ty))
 }
 
-pub fn lower_value(value: &JeffValue) -> JeffResult<JeffValue> {
+pub fn lower_upstream_type(ty: &UpstreamType) -> JeffResult<JeffType> {
+    deserialize_type(ty)
+}
+
+pub fn serialize_value(value: &JeffValue) -> JeffResult<JeffValue> {
     let mut lowered = value.clone();
     if lowered.index.is_none() {
         lowered.index = Some(0);
@@ -220,11 +239,19 @@ pub fn lower_upstream_value<V: UpstreamValueLike>(value: &V) -> JeffResult<JeffV
 }
 
 pub fn lower_op(op: &JeffOp) -> JeffResult<JeffOp> {
+    serialize_op(op)
+}
+
+pub fn serialize_op(op: &JeffOp) -> JeffResult<JeffOp> {
     let mut lowered = op.clone();
     if lowered.name.is_none() {
         lowered.name = Some(format!("op{}", lowered.inputs.len() + lowered.outputs.len()));
     }
     Ok(lowered)
+}
+
+pub fn deserialize_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
+    lower_upstream_op(op)
 }
 
 pub fn lower_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
@@ -333,7 +360,7 @@ pub fn lower_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
     })
 }
 
-pub fn lower_value_index(value: &JeffValue, ctx: &mut LoweringContext) -> JeffResult<usize> {
+pub fn lower_value_index(value: &JeffValue, ctx: &mut SerializationContext) -> JeffResult<usize> {
     let key = value.name.clone().unwrap_or_else(|| format!("v{}", ctx.value_order.len()));
     let idx = match ctx.value_map.get(&key) {
         Some(&idx) => idx,
@@ -347,7 +374,7 @@ pub fn lower_value_index(value: &JeffValue, ctx: &mut LoweringContext) -> JeffRe
     Ok(idx)
 }
 
-pub fn lower_op_with_context(op: &JeffOp, ctx: &mut LoweringContext) -> JeffResult<usize> {
+pub fn lower_op_with_context(op: &JeffOp, ctx: &mut SerializationContext) -> JeffResult<usize> {
     let key = op.name.clone().unwrap_or_else(|| format!("op{}", ctx.op_map.len()));
     let idx = match ctx.op_map.get(&key) {
         Some(&idx) => idx,
@@ -365,6 +392,10 @@ pub fn lower_float_precision(precision: FloatPrecision) -> JeffResult<u8> {
 }
 
 pub fn lower_function(function: &JeffFunction) -> JeffResult<JeffFunction> {
+    serialize_function(function)
+}
+
+pub fn serialize_function(function: &JeffFunction) -> JeffResult<JeffFunction> {
     let mut lowered = function.clone();
     if lowered.name.is_none() {
         lowered.name = Some(format!("func{}", lowered.arguments.len() + lowered.results.len()));
@@ -382,6 +413,10 @@ pub fn lower_function(function: &JeffFunction) -> JeffResult<JeffFunction> {
         value.index = Some(idx);
     }
     Ok(lowered)
+}
+
+pub fn deserialize_function(function: &UpstreamFunction<'_>) -> JeffResult<JeffFunction> {
+    lower_upstream_function(function)
 }
 
 pub fn lower_upstream_function(function: &UpstreamFunction<'_>) -> JeffResult<JeffFunction> {
@@ -424,6 +459,10 @@ pub fn lower_upstream_function(function: &UpstreamFunction<'_>) -> JeffResult<Je
 }
 
 pub fn lower_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
+    serialize_region(region)
+}
+
+pub fn serialize_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
     let mut lowered = region.clone();
     if lowered.name.is_none() {
         lowered.name = Some(format!("region{}", lowered.ops.len()));
@@ -434,6 +473,10 @@ pub fn lower_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
         }
     }
     Ok(lowered)
+}
+
+pub fn deserialize_region(region: &UpstreamRegion<'_>) -> JeffResult<JeffRegion> {
+    lower_upstream_region(region)
 }
 
 pub fn lower_upstream_region(region: &UpstreamRegion<'_>) -> JeffResult<JeffRegion> {
