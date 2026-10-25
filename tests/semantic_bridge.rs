@@ -77,8 +77,8 @@ fn assert_module_equal(left: &JeffModule, right: &JeffModule, context: &str) {
 }
 
 fn round_trip_module(module: &JeffModule) -> JeffModule {
-    let lowered = jeff_pliron::lower_module(module).expect("module should lower");
-    jeff_pliron::raise_module_semantic(&lowered).expect("module should raise back")
+    let lowered = jeff_pliron::deserialize_module_from_jeff(module).expect("module should deserialize");
+    jeff_pliron::serialize_jeff_module(&lowered).expect("module should serialize back")
 }
 
 fn build_module(name: &str, ops: Vec<JeffOp>) -> JeffModule {
@@ -121,7 +121,7 @@ fn type_semantics_round_trip() {
     assert_eq!(qubit.to_string(), "!jeff.qubit");
     assert_eq!(int.to_string(), "!jeff.int<8>");
     assert_eq!(float_array.to_string(), "!jeff.floatArray<64, static(16)>");
-    assert_eq!(jeff_pliron::lower_type(&qubit).unwrap(), JeffType::Qubit);
+    assert_eq!(jeff_pliron::serialize_type(&qubit).unwrap(), JeffType::Qubit);
     assert_eq!(JeffTypeFromCrate::from(qubit), JeffTypeFromCrate::Qubit);
     assert_eq!(JeffTypeFromCrate::from(int), JeffTypeFromCrate::Int { bits: 8 });
 }
@@ -214,7 +214,7 @@ fn value_lowering_keeps_semantics() {
         index: None,
     };
 
-    let lowered = jeff_pliron::lower_value(&value).unwrap();
+    let lowered = jeff_pliron::serialize_value(&value).unwrap();
     assert_eq!(lowered.name, Some("angle".to_string()));
     assert_eq!(
         lowered.ty,
@@ -243,7 +243,7 @@ fn module_lowering_is_stable() {
         metadata: vec![],
     };
 
-    let lowered = jeff_pliron::lower_module(&module).unwrap();
+    let lowered = jeff_pliron::deserialize_module_from_jeff(&module).unwrap();
     assert_eq!(lowered.name, Some("demo".to_string()));
     assert_eq!(lowered.functions.len(), 1);
     assert_eq!(lowered.functions[0].regions.len(), 1);
@@ -286,14 +286,14 @@ fn module_roundtrips_through_dialect_boundary() {
         metadata: vec![],
     };
 
-    let lowered = jeff_pliron::lower_module(&module).unwrap();
+    let lowered = jeff_pliron::deserialize_module_from_jeff(&module).unwrap();
     assert_eq!(lowered.name, Some("demo".to_string()));
     assert_eq!(lowered.functions[0].name.as_deref(), Some("main"));
     assert_eq!(lowered.functions[0].regions[0].ops.len(), 2);
     assert_eq!(lowered.functions[0].regions[0].ops[0].outputs[0].name.as_deref(), Some("q2"));
     assert_eq!(lowered.functions[0].regions[0].ops[1].inputs[0].name.as_deref(), Some("q2"));
 
-    let raised = jeff_pliron::raise_module_semantic(&lowered).unwrap();
+    let raised = jeff_pliron::serialize_jeff_module(&lowered).unwrap();
     assert_eq!(raised.functions[0].regions[0].ops[1].semantic_name(), "jeff.x");
     assert_eq!(raised.functions[0].regions[0].ops[0].outputs[0].ty, JeffType::Qubit);
 }

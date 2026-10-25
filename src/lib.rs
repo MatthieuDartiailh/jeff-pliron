@@ -23,9 +23,10 @@ pub use ops::{
     JeffValue, QubitAllocOp, QubitFreeOp, QubitGateOp, QubitMeasureOp, QuregAllocOp, QuregLengthOp,
 };
 pub use raising::{
-    DeserializationContext, RaisingContext, deserialize_jeff_module, raise_float_precision,
-    raise_function, raise_module, raise_module_semantic, raise_op, raise_region, raise_type,
-    raise_value, serialize_jeff_module,
+    DeserializationContext, RaisingContext, deserialize_jeff_module, deserialize_module,
+    deserialize_module_semantic, deserialize_op, deserialize_region, deserialize_type,
+    deserialize_value, raise_float_precision, raise_function, raise_module, raise_module_semantic,
+    raise_op, raise_region, raise_type, raise_value, serialize_jeff_module,
 };
 pub use types::{
     FloatArrayType, FloatPrecision, FloatType, IntArrayType, IntType, JeffType, QubitType,
