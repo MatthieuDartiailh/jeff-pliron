@@ -14,9 +14,10 @@ The dialect name is intentionally `jeff`, matching the schema and the existing `
 ## Core design
 
 - JEFF type semantics are modeled explicitly: qubit, qureg, int, intArray, float, and floatArray
-- JEFF operation families are represented as a semantic op enum with typed values and metadata
+- JEFF operation families are represented as a semantic op model with typed values and metadata
 - generic string tables and metadata entries are preserved as explicit structures
-- serialization and deserialization passes keep the JEFF semantic graph deterministic and faithful
+- serialization/deserialization passes keep the JEFF semantic graph deterministic and faithful
+- the public API follows the JEFF exchange format terminology used by `jeff-mlir`, not "lowering/raising"
 
 ## Repository layout
 
@@ -24,10 +25,10 @@ The dialect name is intentionally `jeff`, matching the schema and the existing `
 - `src/types.rs` — JEFF semantic type model
 - `src/ops.rs` — JEFF op families and value model
 - `src/attributes.rs` — metadata and string table helpers
-- `src/lowering.rs` — JEFF-to-pliron serialization scaffolding
-- `src/raising.rs` — pliron-to-JEFF deserialization scaffolding
+- `src/lowering.rs` — JEFF-to-pliron serialization logic
+- `src/raising.rs` — pliron-to-JEFF deserialization helpers
 - `src/error.rs` — crate error types
 
 ## Validation
 
-This repository is kept intentionally small and focused; the current implementation provides the semantic bridge skeleton and round-trip-oriented tests for core JEFF types and metadata.
+This repository is kept intentionally small and focused; the current implementation provides the semantic bridge and round-trip-oriented tests for core JEFF types, operation families, and example modules.

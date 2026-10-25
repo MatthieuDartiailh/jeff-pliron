@@ -14,9 +14,6 @@ pub struct DeserializationContext {
     pub function_to_index: HashMap<String, usize>,
 }
 
-#[deprecated(note = "use DeserializationContext instead")]
-pub type RaisingContext = DeserializationContext;
-
 pub fn serialize_jeff_module(module: &JeffModule) -> JeffResult<JeffModule> {
     Ok(module.clone())
 }
