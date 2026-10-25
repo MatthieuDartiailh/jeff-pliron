@@ -471,19 +471,6 @@ pub fn lower_module_semantic(module: &JeffModule) -> JeffResult<SemanticLowering
     })
 }
 
-pub fn lower_upstream_module(module: &UpstreamModule<'_>) -> JeffResult<JeffModule> {
-    let functions = module
-        .functions()
-        .map(|function| lower_upstream_function(&function))
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(JeffModule {
-        name: None,
-        strings: StringTable::new(),
-        functions,
-        metadata: Vec::new(),
-    })
-}
-
 pub fn lower_metadata_summary(op: &JeffOp) -> JeffResult<usize> {
     Ok(op.metadata.len())
 }
