@@ -74,6 +74,19 @@ pub fn deserialize_module(module: &UpstreamModule<'_>) -> JeffResult<JeffModule>
     lower_upstream_module(module)
 }
 
+pub fn lower_upstream_module(module: &UpstreamModule<'_>) -> JeffResult<JeffModule> {
+    let functions = module
+        .functions()
+        .map(|function| lower_upstream_function(&function))
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(JeffModule {
+        name: None,
+        strings: StringTable::new(),
+        functions,
+        metadata: Vec::new(),
+    })
+}
+
 fn lower_upstream_value_like<V: UpstreamValueLike>(value: &V) -> JeffResult<JeffValue> {
     Ok(JeffValue {
         ty: JeffType::from(value.jeff_type()),
