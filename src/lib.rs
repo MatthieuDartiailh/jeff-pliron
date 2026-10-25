@@ -12,21 +12,16 @@ pub use error::{JeffPlironError, JeffResult};
 pub use lowering::{
     SerializationContext, deserialize_function, deserialize_module, deserialize_module_from_jeff,
     deserialize_module_from_upstream, deserialize_op, deserialize_region, deserialize_type,
-    deserialize_value, lower_float_precision, lower_function, lower_metadata_summary, lower_module,
-    lower_module_semantic, lower_op, lower_op_with_context, lower_region, lower_type,
-    lower_upstream_function, lower_upstream_module, lower_upstream_op, lower_upstream_region,
-    lower_upstream_type, lower_upstream_value, lower_value, lower_value_index, serialize_function,
-    serialize_module, serialize_op, serialize_region, serialize_type, serialize_value,
+    serialize_float_precision, serialize_function, serialize_module, serialize_module_semantic,
+    serialize_op, serialize_region, serialize_type, serialize_value, serialize_value_index,
 };
 pub use ops::{
     FuncCallOp, FuncDeclOp, FuncDefOp, JeffFunction, JeffModule, JeffOp, JeffOpKind, JeffRegion,
     JeffValue, QubitAllocOp, QubitFreeOp, QubitGateOp, QubitMeasureOp, QuregAllocOp, QuregLengthOp,
 };
 pub use raising::{
-    DeserializationContext, RaisingContext, deserialize_jeff_module, deserialize_module,
-    deserialize_module_semantic, deserialize_op, deserialize_region, deserialize_type,
-    deserialize_value, raise_float_precision, raise_function, raise_module, raise_module_semantic,
-    raise_op, raise_region, raise_type, raise_value, serialize_jeff_module,
+    DeserializationContext, deserialize_jeff_module, deserialize_module_semantic, deserialize_value,
+    serialize_jeff_module,
 };
 pub use types::{
     FloatArrayType, FloatPrecision, FloatType, IntArrayType, IntType, JeffType, QubitType,

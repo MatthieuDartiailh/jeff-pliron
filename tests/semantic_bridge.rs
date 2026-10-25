@@ -251,7 +251,7 @@ fn module_lowering_is_stable() {
     assert_eq!(lowered.functions[0].results[0].name.as_deref(), Some("q1"));
     assert_eq!(lowered.functions[0].regions[0].ops[0].name.as_deref(), Some("alloc0"));
 
-    let semantic = jeff_pliron::lower_module_semantic(&module).unwrap();
+    let semantic = jeff_pliron::serialize_module_semantic(&module).unwrap();
     assert_eq!(semantic.function_map.get("entry"), Some(&0));
     assert_eq!(semantic.region_map.get("entry_region"), Some(&0));
     assert_eq!(semantic.op_map.get("alloc0"), Some(&0));
@@ -311,12 +311,12 @@ fn op_metadata_round_trip() {
 
 #[test]
 fn lowering_context_keeps_stable_value_order() {
-    let mut ctx = jeff_pliron::LoweringContext::default();
+    let mut ctx = jeff_pliron::SerializationContext::default();
     let value_a = JeffValue::named(JeffType::Qubit, "q0");
     let value_b = JeffValue::named(JeffType::Qubit, "q0");
 
-    let idx_a = jeff_pliron::lower_value_index(&value_a, &mut ctx).unwrap();
-    let idx_b = jeff_pliron::lower_value_index(&value_b, &mut ctx).unwrap();
+    let idx_a = jeff_pliron::serialize_value_index(&value_a, &mut ctx).unwrap();
+    let idx_b = jeff_pliron::serialize_value_index(&value_b, &mut ctx).unwrap();
 
     assert_eq!(idx_a, 0);
     assert_eq!(idx_b, 0);
