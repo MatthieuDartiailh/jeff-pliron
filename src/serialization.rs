@@ -74,14 +74,10 @@ pub fn deserialize_module(module: &UpstreamModule<'_>) -> JeffResult<JeffModule>
     deserialize_module_from_upstream(module)
 }
 
-pub fn lower_upstream_module(module: &UpstreamModule<'_>) -> JeffResult<JeffModule> {
-    deserialize_module_from_upstream(module)
-}
-
 pub fn deserialize_module_from_upstream(module: &UpstreamModule<'_>) -> JeffResult<JeffModule> {
     let functions = module
         .functions()
-        .map(|function| lower_upstream_function(&function))
+        .map(|function| deserialize_upstream_function(&function))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(JeffModule {
         name: None,
@@ -91,7 +87,7 @@ pub fn deserialize_module_from_upstream(module: &UpstreamModule<'_>) -> JeffResu
     })
 }
 
-fn lower_upstream_value_like<V: UpstreamValueLike>(value: &V) -> JeffResult<JeffValue> {
+fn deserialize_upstream_value_like<V: UpstreamValueLike>(value: &V) -> JeffResult<JeffValue> {
     Ok(JeffValue {
         ty: JeffType::from(value.jeff_type()),
         name: None,
@@ -99,11 +95,11 @@ fn lower_upstream_value_like<V: UpstreamValueLike>(value: &V) -> JeffResult<Jeff
     })
 }
 
-fn lower_upstream_function_io(value: UpstreamFunctionIOValue<'_>) -> JeffResult<JeffValue> {
-    lower_upstream_value_like(&value)
+fn deserialize_upstream_function_io(value: UpstreamFunctionIOValue<'_>) -> JeffResult<JeffValue> {
+    deserialize_upstream_value_like(&value)
 }
 
-fn lower_upstream_gate_kind(gate_type: GateOpType<'_>) -> JeffOpKind {
+fn deserialize_upstream_gate_kind(gate_type: GateOpType<'_>) -> JeffOpKind {
     match gate_type {
         GateOpType::WellKnown(WellKnownGate::GPhase) => JeffOpKind::GPhase,
         GateOpType::WellKnown(WellKnownGate::I) => JeffOpKind::I,
@@ -228,10 +224,10 @@ pub fn serialize_op(op: &JeffOp) -> JeffResult<JeffOp> {
 }
 
 pub fn deserialize_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
-    lower_upstream_op(op)
+    deserialize_upstream_op(op)
 }
 
-pub fn lower_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
+pub fn deserialize_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
     let kind = match op.op_type() {
         OpType::QubitOp(qubit_op) => match qubit_op {
             QubitOp::Alloc => JeffOpKind::QubitAlloc,
@@ -240,7 +236,7 @@ pub fn lower_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
             QubitOp::Measure => JeffOpKind::QubitMeasure,
             QubitOp::MeasureNd => JeffOpKind::QubitMeasureNd,
             QubitOp::Reset => JeffOpKind::QubitReset,
-            QubitOp::Gate(gate) => lower_upstream_gate_kind(gate.gate_type),
+            QubitOp::Gate(gate) => deserialize_upstream_gate_kind(gate.gate_type),
             _ => JeffOpKind::Custom,
         },
         OpType::QubitRegisterOp(qureg_op) => match qureg_op {
@@ -319,13 +315,13 @@ pub fn lower_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
     let mut inputs = Vec::new();
     for value in op.inputs() {
         let value = value.map_err(|err| JeffPlironError::InvalidValueMapping(err.to_string()))?;
-        inputs.push(lower_upstream_value_like(&value)?);
+        inputs.push(deserialize_upstream_value_like(&value)?);
     }
 
     let mut outputs = Vec::new();
     for value in op.outputs() {
         let value = value.map_err(|err| JeffPlironError::InvalidValueMapping(err.to_string()))?;
-        outputs.push(lower_upstream_value_like(&value)?);
+        outputs.push(deserialize_upstream_value_like(&value)?);
     }
 
     Ok(JeffOp {
