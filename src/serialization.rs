@@ -26,7 +26,7 @@ pub struct SerializationContext {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct SemanticLowering {
+pub struct SemanticSerialization {
     pub module: JeffModule,
     pub value_map: HashMap<String, usize>,
     pub op_map: HashMap<String, usize>,
@@ -347,7 +347,7 @@ pub fn serialize_value_index(value: &JeffValue, ctx: &mut SerializationContext) 
     Ok(idx)
 }
 
-pub fn lower_op_with_context(op: &JeffOp, ctx: &mut SerializationContext) -> JeffResult<usize> {
+pub fn serialize_op_with_context(op: &JeffOp, ctx: &mut SerializationContext) -> JeffResult<usize> {
     let key = op.name.clone().unwrap_or_else(|| format!("op{}", ctx.op_map.len()));
     let idx = match ctx.op_map.get(&key) {
         Some(&idx) => idx,
@@ -385,10 +385,10 @@ pub fn serialize_function(function: &JeffFunction) -> JeffResult<JeffFunction> {
 }
 
 pub fn deserialize_function(function: &UpstreamFunction<'_>) -> JeffResult<JeffFunction> {
-    lower_upstream_function(function)
+    deserialize_upstream_function(function)
 }
 
-pub fn lower_upstream_function(function: &UpstreamFunction<'_>) -> JeffResult<JeffFunction> {
+pub fn deserialize_upstream_function(function: &UpstreamFunction<'_>) -> JeffResult<JeffFunction> {
     let name = Some(function.name().to_string());
     let mut arguments = Vec::new();
     let mut results = Vec::new();
@@ -398,23 +398,23 @@ pub fn lower_upstream_function(function: &UpstreamFunction<'_>) -> JeffResult<Je
         UpstreamFunction::Declaration(decl) => {
             for value in decl.input_types() {
                 let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
-                arguments.push(lower_upstream_function_io(value)?);
+                arguments.push(deserialize_upstream_function_io(value)?);
             }
             for value in decl.output_types() {
                 let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
-                results.push(lower_upstream_function_io(value)?);
+                results.push(deserialize_upstream_function_io(value)?);
             }
         }
         UpstreamFunction::Definition(def) => {
             for value in def.input_types() {
                 let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
-                arguments.push(lower_upstream_function_io(value)?);
+                arguments.push(deserialize_upstream_function_io(value)?);
             }
             for value in def.output_types() {
                 let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
-                results.push(lower_upstream_function_io(value)?);
+                results.push(deserialize_upstream_function_io(value)?);
             }
-            regions.push(lower_upstream_region(&def.body())?);
+            regions.push(deserialize_upstream_region(&def.body())?);
         }
     }
 
@@ -441,13 +441,13 @@ pub fn serialize_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
 }
 
 pub fn deserialize_region(region: &UpstreamRegion<'_>) -> JeffResult<JeffRegion> {
-    lower_upstream_region(region)
+    deserialize_upstream_region(region)
 }
 
-pub fn lower_upstream_region(region: &UpstreamRegion<'_>) -> JeffResult<JeffRegion> {
+pub fn deserialize_upstream_region(region: &UpstreamRegion<'_>) -> JeffResult<JeffRegion> {
     let ops = region
         .operations()
-        .map(|op| lower_upstream_op(&op).map_err(|err| JeffPlironError::DeserializationFailed(err.to_string())))
+        .map(|op| deserialize_upstream_op(&op).map_err(|err| JeffPlironError::DeserializationFailed(err.to_string())))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(JeffRegion {
         name: None,
@@ -456,7 +456,7 @@ pub fn lower_upstream_region(region: &UpstreamRegion<'_>) -> JeffResult<JeffRegi
     })
 }
 
-pub fn serialize_module_semantic(module: &JeffModule) -> JeffResult<SemanticLowering> {
+pub fn serialize_module_semantic(module: &JeffModule) -> JeffResult<SemanticSerialization> {
     let mut value_map = HashMap::new();
     let mut op_map = HashMap::new();
     let mut function_map = HashMap::new();
@@ -483,7 +483,7 @@ pub fn serialize_module_semantic(module: &JeffModule) -> JeffResult<SemanticLowe
         }
     }
 
-    Ok(SemanticLowering {
+    Ok(SemanticSerialization {
         module: module.clone(),
         value_map,
         op_map,
@@ -492,10 +492,10 @@ pub fn serialize_module_semantic(module: &JeffModule) -> JeffResult<SemanticLowe
     })
 }
 
-pub fn lower_metadata_summary(op: &JeffOp) -> JeffResult<usize> {
+pub fn serialize_metadata_summary(op: &JeffOp) -> JeffResult<usize> {
     Ok(op.metadata.len())
 }
 
-pub fn lower_string_table(strings: &StringTable) -> JeffResult<StringTable> {
+pub fn serialize_string_table(strings: &StringTable) -> JeffResult<StringTable> {
     Ok(strings.clone())
 }

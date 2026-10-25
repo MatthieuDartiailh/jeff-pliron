@@ -17,7 +17,7 @@ The dialect name is intentionally `jeff`, matching the schema and the existing `
 - JEFF operation families are represented as a semantic op model with typed values and metadata
 - generic string tables and metadata entries are preserved as explicit structures
 - serialization/deserialization passes keep the JEFF semantic graph deterministic and faithful
-- the public API follows the JEFF exchange format terminology used by `jeff-mlir`, not "lowering/raising"
+- the public API follows the JEFF exchange format terminology used by `jeff-mlir`, with explicit serialization/deserialization boundaries
 
 ## Repository layout
 
@@ -25,8 +25,8 @@ The dialect name is intentionally `jeff`, matching the schema and the existing `
 - `src/types.rs` — JEFF semantic type model
 - `src/ops.rs` — JEFF op families and value model
 - `src/attributes.rs` — metadata and string table helpers
-- `src/lowering.rs` — JEFF-to-pliron serialization logic
-- `src/raising.rs` — pliron-to-JEFF deserialization helpers
+- `src/serialization.rs` — JEFF-to-pliron serialization logic
+- `src/deserialization.rs` — pliron-to-JEFF deserialization helpers
 - `src/error.rs` — crate error types
 
 ## Validation

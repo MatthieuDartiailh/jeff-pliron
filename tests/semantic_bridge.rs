@@ -205,7 +205,7 @@ fn generator_style_scf_and_function_cases_round_trip() {
 }
 
 #[test]
-fn value_lowering_keeps_semantics() {
+fn value_serialization_keeps_semantics() {
     let value = JeffValue {
         ty: JeffType::Float {
             precision: FloatPrecision::Float32,
@@ -225,7 +225,7 @@ fn value_lowering_keeps_semantics() {
 }
 
 #[test]
-fn module_lowering_is_stable() {
+fn module_serialization_is_stable() {
     let module = JeffModule {
         name: Some("demo".to_string()),
         strings: jeff_pliron::StringTable::new(),
@@ -310,7 +310,7 @@ fn op_metadata_round_trip() {
 }
 
 #[test]
-fn lowering_context_keeps_stable_value_order() {
+fn serialization_context_keeps_stable_value_order() {
     let mut ctx = jeff_pliron::SerializationContext::default();
     let value_a = JeffValue::named(JeffType::Qubit, "q0");
     let value_b = JeffValue::named(JeffType::Qubit, "q0");
