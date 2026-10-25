@@ -771,9 +771,8 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "jeff-format"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dd61e4063a6feb13c21088848d0c4315d7b10588288fdc3e5cc0ae9b556f4a6"
+version = "0.2.0"
+source = "git+https://github.com/unitaryfoundation/jeff?tag=jeff-v0.3.1#100252698f28f6908187ef7175016de7ddfd0d46"
 dependencies = [
  "capnp",
  "derive_more",

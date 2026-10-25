@@ -8,7 +8,7 @@ license = "BSD-3-Clause"
 [dependencies]
 pliron = "0.20.0"
 thiserror = "2"
-jeff = { package = "jeff-format", version = "0.2.1" }
+jeff = { package = "jeff-format", git = "https://github.com/unitaryfoundation/jeff", tag = "jeff-v0.3.1" }
 
 [dev-dependencies]
 reqwest = { version = "0.12", features = ["blocking", "rustls-tls"] }
