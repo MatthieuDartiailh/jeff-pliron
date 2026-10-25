@@ -10,10 +10,10 @@ pub enum JeffPlironError {
     InvalidValueMapping(String),
     #[error("unsupported JEFF op kind: {0}")]
     UnsupportedOp(String),
-    #[error("lowering failed: {0}")]
-    LoweringFailed(String),
-    #[error("raising failed: {0}")]
-    RaisingFailed(String),
+    #[error("serialization failed: {0}")]
+    SerializationFailed(String),
+    #[error("deserialization failed: {0}")]
+    DeserializationFailed(String),
 }
 
 pub type JeffResult<T> = Result<T, JeffPlironError>;

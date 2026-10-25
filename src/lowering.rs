@@ -66,6 +66,14 @@ impl<'a> UpstreamValueLike for UpstreamFunctionIOValue<'a> {
     }
 }
 
+pub fn serialize_module(module: &JeffModule) -> JeffResult<JeffModule> {
+    lower_module(module)
+}
+
+pub fn deserialize_module(module: &UpstreamModule<'_>) -> JeffResult<JeffModule> {
+    lower_upstream_module(module)
+}
+
 fn lower_upstream_value_like<V: UpstreamValueLike>(value: &V) -> JeffResult<JeffValue> {
     Ok(JeffValue {
         ty: JeffType::from(value.jeff_type()),
@@ -372,21 +380,21 @@ pub fn lower_upstream_function(function: &UpstreamFunction<'_>) -> JeffResult<Je
     match function {
         UpstreamFunction::Declaration(decl) => {
             for value in decl.input_types() {
-                let value = value.map_err(|err| JeffPlironError::LoweringFailed(err.to_string()))?;
+                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
                 arguments.push(lower_upstream_function_io(value)?);
             }
             for value in decl.output_types() {
-                let value = value.map_err(|err| JeffPlironError::LoweringFailed(err.to_string()))?;
+                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
                 results.push(lower_upstream_function_io(value)?);
             }
         }
         UpstreamFunction::Definition(def) => {
             for value in def.input_types() {
-                let value = value.map_err(|err| JeffPlironError::LoweringFailed(err.to_string()))?;
+                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
                 arguments.push(lower_upstream_function_io(value)?);
             }
             for value in def.output_types() {
-                let value = value.map_err(|err| JeffPlironError::LoweringFailed(err.to_string()))?;
+                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
                 results.push(lower_upstream_function_io(value)?);
             }
             regions.push(lower_upstream_region(&def.body())?);
@@ -418,7 +426,7 @@ pub fn lower_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
 pub fn lower_upstream_region(region: &UpstreamRegion<'_>) -> JeffResult<JeffRegion> {
     let ops = region
         .operations()
-        .map(|op| lower_upstream_op(&op).map_err(|err| JeffPlironError::LoweringFailed(err.to_string())))
+        .map(|op| lower_upstream_op(&op).map_err(|err| JeffPlironError::DeserializationFailed(err.to_string())))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(JeffRegion {
         name: None,

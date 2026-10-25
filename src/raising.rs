@@ -14,6 +14,14 @@ pub struct RaisingContext {
     pub function_to_index: HashMap<String, usize>,
 }
 
+pub fn serialize_jeff_module(module: &JeffModule) -> JeffResult<JeffModule> {
+    raise_module_semantic(module)
+}
+
+pub fn deserialize_jeff_module(module: &JeffModule) -> JeffResult<JeffModule> {
+    Ok(module.clone())
+}
+
 pub fn raise_module(items: &[JeffOp]) -> JeffResult<Vec<JeffOp>> {
     Ok(items.to_vec())
 }
@@ -34,7 +42,7 @@ pub fn raise_float_precision(bits: u8) -> JeffResult<FloatPrecision> {
     match bits {
         32 => Ok(FloatPrecision::Float32),
         64 => Ok(FloatPrecision::Float64),
-        _ => Err(crate::error::JeffPlironError::RaisingFailed(format!(
+        _ => Err(crate::error::JeffPlironError::DeserializationFailed(format!(
             "unsupported float precision bits: {bits}"
         ))),
     }
