@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs, path::Path};
 
-use jeff::{reader::ReadJeff, Jeff};
+use jeff::{Jeff, reader::ReadJeff};
 
 use crate::{
     error::JeffResult,

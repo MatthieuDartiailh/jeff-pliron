@@ -4,8 +4,9 @@ use jeff::reader::optype::{
     ControlFlowOp, FuncOp, GateOpType, OpType, QubitOp, QubitRegisterOp, WellKnownGate,
 };
 use jeff::reader::{
-    Function as UpstreamFunction, FunctionIOValue as UpstreamFunctionIOValue, Module as UpstreamModule,
-    Operation as UpstreamOperation, Region as UpstreamRegion, WireValue as UpstreamWireValue,
+    Function as UpstreamFunction, FunctionIOValue as UpstreamFunctionIOValue,
+    Module as UpstreamModule, Operation as UpstreamOperation, Region as UpstreamRegion,
+    WireValue as UpstreamWireValue,
 };
 use jeff::types::Type as UpstreamType;
 
@@ -40,7 +41,6 @@ impl SerializationContext {
         self.op_map = self.op_to_id.clone();
         self.region_map = self.region_to_id.clone();
     }
-
 }
 
 #[derive(Clone, Debug, Default)]
@@ -61,11 +61,17 @@ fn canonicalize_op_name(op: &JeffOp, fallback: usize) -> String {
 }
 
 fn canonicalize_region_name(region: &JeffRegion, fallback: usize) -> String {
-    region.name.clone().unwrap_or_else(|| format!("region{fallback}"))
+    region
+        .name
+        .clone()
+        .unwrap_or_else(|| format!("region{fallback}"))
 }
 
 fn canonicalize_function_name(function: &JeffFunction, fallback: usize) -> String {
-    function.name.clone().unwrap_or_else(|| format!("func{fallback}"))
+    function
+        .name
+        .clone()
+        .unwrap_or_else(|| format!("func{fallback}"))
 }
 
 pub trait UpstreamValueLike {
@@ -102,7 +108,8 @@ pub fn serialize_module(module: &JeffModule) -> JeffResult<JeffModule> {
         if function.name.is_none() {
             function.name = Some(function_key.clone());
         }
-        ctx.function_to_id.insert(function_key.clone(), function_idx);
+        ctx.function_to_id
+            .insert(function_key.clone(), function_idx);
         ctx.function_map.insert(function_key.clone(), function_idx);
 
         for (region_idx, region) in function.regions.iter_mut().enumerate() {
@@ -148,7 +155,10 @@ pub fn serialize_module(module: &JeffModule) -> JeffResult<JeffModule> {
         }
 
         for (value_idx, value) in function.results.iter_mut().enumerate() {
-            let key = canonicalize_value_name(value, value_idx + function.arguments.len() + ctx.value_order.len());
+            let key = canonicalize_value_name(
+                value,
+                value_idx + function.arguments.len() + ctx.value_order.len(),
+            );
             if value.name.is_none() {
                 value.name = Some(key.clone());
             }
@@ -261,7 +271,10 @@ pub fn serialize_value(value: &JeffValue) -> JeffResult<JeffValue> {
 pub fn serialize_op(op: &JeffOp) -> JeffResult<JeffOp> {
     let mut lowered = op.clone();
     if lowered.name.is_none() {
-        lowered.name = Some(format!("op{}", lowered.inputs.len() + lowered.outputs.len()));
+        lowered.name = Some(format!(
+            "op{}",
+            lowered.inputs.len() + lowered.outputs.len()
+        ));
     }
     Ok(lowered)
 }
@@ -305,33 +318,46 @@ pub fn deserialize_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp>
             jeff::reader::optype::IntOp::Add => JeffOpKind::IntAdd,
             jeff::reader::optype::IntOp::Sub => JeffOpKind::IntSub,
             jeff::reader::optype::IntOp::Mul => JeffOpKind::IntMul,
-            jeff::reader::optype::IntOp::DivS | jeff::reader::optype::IntOp::DivU => JeffOpKind::IntDiv,
+            jeff::reader::optype::IntOp::DivS | jeff::reader::optype::IntOp::DivU => {
+                JeffOpKind::IntDiv
+            }
             jeff::reader::optype::IntOp::Pow => JeffOpKind::IntMul,
             jeff::reader::optype::IntOp::And => JeffOpKind::IntBitAnd,
             jeff::reader::optype::IntOp::Or => JeffOpKind::IntBitOr,
             jeff::reader::optype::IntOp::Xor => JeffOpKind::IntBitXor,
             jeff::reader::optype::IntOp::Not => JeffOpKind::IntBitXor,
-            jeff::reader::optype::IntOp::MinS | jeff::reader::optype::IntOp::MinU => JeffOpKind::IntCmp,
-            jeff::reader::optype::IntOp::MaxS | jeff::reader::optype::IntOp::MaxU => JeffOpKind::IntCmp,
+            jeff::reader::optype::IntOp::MinS | jeff::reader::optype::IntOp::MinU => {
+                JeffOpKind::IntCmp
+            }
+            jeff::reader::optype::IntOp::MaxS | jeff::reader::optype::IntOp::MaxU => {
+                JeffOpKind::IntCmp
+            }
             jeff::reader::optype::IntOp::Eq
             | jeff::reader::optype::IntOp::LtS
             | jeff::reader::optype::IntOp::LteS
             | jeff::reader::optype::IntOp::LtU
             | jeff::reader::optype::IntOp::LteU => JeffOpKind::IntCmp,
             jeff::reader::optype::IntOp::Abs => JeffOpKind::IntCmp,
-            jeff::reader::optype::IntOp::RemS | jeff::reader::optype::IntOp::RemU => JeffOpKind::IntDiv,
-            jeff::reader::optype::IntOp::Shl | jeff::reader::optype::IntOp::Shr => JeffOpKind::IntBitOr,
+            jeff::reader::optype::IntOp::RemS | jeff::reader::optype::IntOp::RemU => {
+                JeffOpKind::IntDiv
+            }
+            jeff::reader::optype::IntOp::Shl | jeff::reader::optype::IntOp::Shr => {
+                JeffOpKind::IntBitOr
+            }
             jeff::reader::optype::IntOp::Select => JeffOpKind::IntSelect,
-            jeff::reader::optype::IntOp::ExtS | jeff::reader::optype::IntOp::ExtU => JeffOpKind::IntSelect,
+            jeff::reader::optype::IntOp::ExtS | jeff::reader::optype::IntOp::ExtU => {
+                JeffOpKind::IntSelect
+            }
             jeff::reader::optype::IntOp::Trunc => JeffOpKind::IntSelect,
-            jeff::reader::optype::IntOp::ToFloatS | jeff::reader::optype::IntOp::ToFloatU => JeffOpKind::IntCmp,
+            jeff::reader::optype::IntOp::ToFloatS | jeff::reader::optype::IntOp::ToFloatU => {
+                JeffOpKind::IntCmp
+            }
             _ => JeffOpKind::Custom,
         },
         OpType::IntArrayOp(_) => JeffOpKind::IntConst,
         OpType::FloatOp(float_op) => match float_op {
-            jeff::reader::optype::FloatOp::Const32(_) | jeff::reader::optype::FloatOp::Const64(_) => {
-                JeffOpKind::FloatConst
-            }
+            jeff::reader::optype::FloatOp::Const32(_)
+            | jeff::reader::optype::FloatOp::Const64(_) => JeffOpKind::FloatConst,
             jeff::reader::optype::FloatOp::Add | jeff::reader::optype::FloatOp::Sub => {
                 JeffOpKind::FloatAdd
             }
@@ -376,8 +402,14 @@ pub fn deserialize_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp>
     })
 }
 
-pub fn serialize_value_index(value: &mut JeffValue, ctx: &mut SerializationContext) -> JeffResult<usize> {
-    let key = value.name.clone().unwrap_or_else(|| format!("v{}", ctx.value_order.len()));
+pub fn serialize_value_index(
+    value: &mut JeffValue,
+    ctx: &mut SerializationContext,
+) -> JeffResult<usize> {
+    let key = value
+        .name
+        .clone()
+        .unwrap_or_else(|| format!("v{}", ctx.value_order.len()));
     let idx = match ctx.value_to_id.get(&key) {
         Some(&idx) => idx,
         None => {
@@ -395,7 +427,10 @@ pub fn serialize_value_index(value: &mut JeffValue, ctx: &mut SerializationConte
 }
 
 pub fn serialize_op_with_context(op: &JeffOp, ctx: &mut SerializationContext) -> JeffResult<usize> {
-    let key = op.name.clone().unwrap_or_else(|| format!("op{}", ctx.op_to_id.len()));
+    let key = op
+        .name
+        .clone()
+        .unwrap_or_else(|| format!("op{}", ctx.op_to_id.len()));
     let idx = match ctx.op_to_id.get(&key) {
         Some(&idx) => idx,
         None => {
@@ -412,7 +447,9 @@ pub fn serialize_float_precision(precision: FloatPrecision) -> JeffResult<u8> {
     Ok(precision.bits())
 }
 
-pub fn serialize_metadata(metadata: &[crate::attributes::JeffMeta]) -> JeffResult<Vec<crate::attributes::JeffMeta>> {
+pub fn serialize_metadata(
+    metadata: &[crate::attributes::JeffMeta],
+) -> JeffResult<Vec<crate::attributes::JeffMeta>> {
     Ok(metadata.to_vec())
 }
 
@@ -428,7 +465,10 @@ pub fn serialize_function(function: &JeffFunction) -> JeffResult<JeffFunction> {
     let mut lowered = function.clone();
     lowered.metadata = serialize_metadata(&function.metadata)?;
     if lowered.name.is_none() {
-        lowered.name = Some(format!("func{}", lowered.arguments.len() + lowered.results.len()));
+        lowered.name = Some(format!(
+            "func{}",
+            lowered.arguments.len() + lowered.results.len()
+        ));
     }
     for (idx, value) in lowered.arguments.iter_mut().enumerate() {
         if value.name.is_none() {
@@ -462,21 +502,25 @@ pub fn deserialize_upstream_function(function: &UpstreamFunction<'_>) -> JeffRes
     match function {
         UpstreamFunction::Declaration(decl) => {
             for value in decl.input_types() {
-                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
+                let value =
+                    value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
                 arguments.push(deserialize_upstream_function_io(value)?);
             }
             for value in decl.output_types() {
-                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
+                let value =
+                    value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
                 results.push(deserialize_upstream_function_io(value)?);
             }
         }
         UpstreamFunction::Definition(def) => {
             for value in def.input_types() {
-                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
+                let value =
+                    value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
                 arguments.push(deserialize_upstream_function_io(value)?);
             }
             for value in def.output_types() {
-                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
+                let value =
+                    value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
                 results.push(deserialize_upstream_function_io(value)?);
             }
             regions.push(deserialize_upstream_region(&def.body())?);
@@ -513,7 +557,10 @@ pub fn deserialize_region(region: &UpstreamRegion<'_>) -> JeffResult<JeffRegion>
 pub fn deserialize_upstream_region(region: &UpstreamRegion<'_>) -> JeffResult<JeffRegion> {
     let ops = region
         .operations()
-        .map(|op| deserialize_upstream_op(&op).map_err(|err| JeffPlironError::DeserializationFailed(err.to_string())))
+        .map(|op| {
+            deserialize_upstream_op(&op)
+                .map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))
+        })
         .collect::<Result<Vec<_>, _>>()?;
     Ok(JeffRegion {
         name: None,
@@ -529,11 +576,17 @@ pub fn serialize_module_semantic(module: &JeffModule) -> JeffResult<SemanticSeri
     let mut region_map = HashMap::new();
 
     for (function_idx, function) in module.functions.iter().enumerate() {
-        let function_key = function.name.clone().unwrap_or_else(|| format!("func{function_idx}"));
+        let function_key = function
+            .name
+            .clone()
+            .unwrap_or_else(|| format!("func{function_idx}"));
         function_map.insert(function_key, function_idx);
 
         for (region_idx, region) in function.regions.iter().enumerate() {
-            let region_key = region.name.clone().unwrap_or_else(|| format!("region{region_idx}"));
+            let region_key = region
+                .name
+                .clone()
+                .unwrap_or_else(|| format!("region{region_idx}"));
             region_map.insert(region_key, region_idx);
 
             for (op_idx, op) in region.ops.iter().enumerate() {
@@ -542,7 +595,12 @@ pub fn serialize_module_semantic(module: &JeffModule) -> JeffResult<SemanticSeri
             }
         }
 
-        for (value_idx, value) in function.arguments.iter().chain(function.results.iter()).enumerate() {
+        for (value_idx, value) in function
+            .arguments
+            .iter()
+            .chain(function.results.iter())
+            .enumerate()
+        {
             if let Some(ref name) = value.name {
                 value_map.insert(name.clone(), value_idx);
             }
