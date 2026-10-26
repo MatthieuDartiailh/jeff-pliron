@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use jeff::{Jeff, reader::ReadJeff};
 use jeff_pliron::{
     JeffFunction, JeffMeta, JeffModule, JeffOp, JeffRegion, JeffValue, StringTable,
-    deserialize_module_from_upstream, serialize_jeff_module,
+    serialize_jeff_module,
 };
 
 fn ensure_example_file(path: &str) -> std::io::Result<()> {
@@ -108,7 +108,8 @@ fn example_module_round_trips_through_pliron_dialect() {
     let jeff = Jeff::read(bytes.as_slice()).expect("example JEFF file should parse");
     let module = jeff.module();
 
-    let lowered = deserialize_module_from_upstream(&module).expect("module should deserialize to the semantic dialect");
+    let lowered = jeff_pliron::serialization::deserialize_module_from_upstream(&module)
+        .expect("module should deserialize to the semantic dialect");
     assert!(!lowered.functions.is_empty(), "module should contain at least one function");
 
     let roundtrip = serialize_jeff_module(&lowered).expect("lowered module should serialize back");

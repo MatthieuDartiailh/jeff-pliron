@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fs, path::Path};
 
 use jeff::reader::optype::{
     ControlFlowOp, FuncOp, GateOpType, OpType, QubitOp, QubitRegisterOp, WellKnownGate,
@@ -18,11 +18,29 @@ use crate::{
 
 #[derive(Clone, Debug, Default)]
 pub struct SerializationContext {
-    pub value_map: HashMap<String, usize>,
+    pub string_table: StringTable,
+    pub value_to_id: HashMap<String, usize>,
     pub value_order: Vec<String>,
+    pub op_to_id: HashMap<String, usize>,
+    pub region_to_id: HashMap<String, usize>,
+    pub function_to_id: HashMap<String, usize>,
+    pub module_metadata: Vec<crate::attributes::JeffMeta>,
+    pub string_id_map: HashMap<String, usize>,
+
+    pub value_map: HashMap<String, usize>,
     pub function_map: HashMap<String, usize>,
     pub op_map: HashMap<String, usize>,
     pub region_map: HashMap<String, usize>,
+}
+
+impl SerializationContext {
+    fn sync_aliases(&mut self) {
+        self.value_map = self.value_to_id.clone();
+        self.function_map = self.function_to_id.clone();
+        self.op_map = self.op_to_id.clone();
+        self.region_map = self.region_to_id.clone();
+    }
+
 }
 
 #[derive(Clone, Debug, Default)]
@@ -67,7 +85,91 @@ impl<'a> UpstreamValueLike for UpstreamFunctionIOValue<'a> {
 }
 
 pub fn serialize_module(module: &JeffModule) -> JeffResult<JeffModule> {
-    deserialize_module_from_jeff(module)
+    let mut ctx = SerializationContext::default();
+    let mut lowered = module.clone();
+
+    lowered.strings = serialize_string_table(&module.strings)?;
+    ctx.string_table = lowered.strings.clone();
+    lowered.metadata = serialize_metadata(&module.metadata)?;
+    ctx.module_metadata = lowered.metadata.clone();
+
+    if lowered.name.is_none() {
+        lowered.name = Some("module".to_string());
+    }
+
+    for (function_idx, function) in lowered.functions.iter_mut().enumerate() {
+        let function_key = canonicalize_function_name(function, function_idx);
+        if function.name.is_none() {
+            function.name = Some(function_key.clone());
+        }
+        ctx.function_to_id.insert(function_key.clone(), function_idx);
+        ctx.function_map.insert(function_key.clone(), function_idx);
+
+        for (region_idx, region) in function.regions.iter_mut().enumerate() {
+            let region_key = canonicalize_region_name(region, region_idx);
+            if region.name.is_none() {
+                region.name = Some(region_key.clone());
+            }
+            ctx.region_to_id.insert(region_key.clone(), region_idx);
+            ctx.region_map.insert(region_key.clone(), region_idx);
+
+            for (op_idx, op) in region.ops.iter_mut().enumerate() {
+                let op_key = canonicalize_op_name(op, op_idx);
+                if op.name.is_none() {
+                    op.name = Some(op_key.clone());
+                }
+                ctx.op_to_id.insert(op_key.clone(), op_idx);
+                ctx.op_map.insert(op_key.clone(), op_idx);
+
+                for value in &mut op.inputs {
+                    let key = canonicalize_value_name(value, ctx.value_order.len());
+                    if value.name.is_none() {
+                        value.name = Some(key.clone());
+                    }
+                    serialize_value_index(value, &mut ctx)?;
+                }
+
+                for value in &mut op.outputs {
+                    let key = canonicalize_value_name(value, ctx.value_order.len());
+                    if value.name.is_none() {
+                        value.name = Some(key.clone());
+                    }
+                    serialize_value_index(value, &mut ctx)?;
+                }
+            }
+        }
+
+        for (value_idx, value) in function.arguments.iter_mut().enumerate() {
+            let key = canonicalize_value_name(value, value_idx + ctx.value_order.len());
+            if value.name.is_none() {
+                value.name = Some(key.clone());
+            }
+            serialize_value_index(value, &mut ctx)?;
+        }
+
+        for (value_idx, value) in function.results.iter_mut().enumerate() {
+            let key = canonicalize_value_name(value, value_idx + function.arguments.len() + ctx.value_order.len());
+            if value.name.is_none() {
+                value.name = Some(key.clone());
+            }
+            serialize_value_index(value, &mut ctx)?;
+        }
+    }
+
+    ctx.sync_aliases();
+    lowered.strings = ctx.string_table.clone();
+    lowered.metadata = ctx.module_metadata.clone();
+    Ok(lowered)
+}
+
+pub fn serialize_jeff_module(module: &JeffModule) -> JeffResult<JeffModule> {
+    Ok(module.clone())
+}
+
+pub fn serialize_to_file(module: &JeffModule, path: impl AsRef<Path>) -> JeffResult<()> {
+    let rendered = serialize_module(module)?;
+    fs::write(path, format!("{rendered:#?}"))?;
+    Ok(())
 }
 
 pub fn deserialize_module(module: &UpstreamModule<'_>) -> JeffResult<JeffModule> {
@@ -137,66 +239,7 @@ fn deserialize_upstream_gate_kind(gate_type: GateOpType<'_>) -> JeffOpKind {
 }
 
 pub fn deserialize_module_from_jeff(module: &JeffModule) -> JeffResult<JeffModule> {
-    let mut lowered = module.clone();
-    let mut ctx = SerializationContext::default();
-
-    for (function_idx, function) in lowered.functions.iter_mut().enumerate() {
-        let function_key = canonicalize_function_name(function, function_idx);
-        if function.name.is_none() {
-            function.name = Some(function_key.clone());
-        }
-        ctx.function_map.insert(function_key, function_idx);
-
-        for (region_idx, region) in function.regions.iter_mut().enumerate() {
-            let region_key = canonicalize_region_name(region, region_idx);
-            if region.name.is_none() {
-                region.name = Some(region_key.clone());
-            }
-            ctx.region_map.insert(region_key, region_idx);
-
-            for (op_idx, op) in region.ops.iter_mut().enumerate() {
-                let op_key = canonicalize_op_name(op, op_idx);
-                if op.name.is_none() {
-                    op.name = Some(op_key.clone());
-                }
-                ctx.op_map.insert(op_key, op_idx);
-
-                for value in &mut op.inputs {
-                    let key = canonicalize_value_name(value, ctx.value_order.len());
-                    if value.name.is_none() {
-                        value.name = Some(key.clone());
-                    }
-                    serialize_value_index(value, &mut ctx)?;
-                }
-
-                for value in &mut op.outputs {
-                    let key = canonicalize_value_name(value, ctx.value_order.len());
-                    if value.name.is_none() {
-                        value.name = Some(key.clone());
-                    }
-                    serialize_value_index(value, &mut ctx)?;
-                }
-            }
-        }
-
-        for (value_idx, value) in function.arguments.iter_mut().enumerate() {
-            let key = canonicalize_value_name(value, value_idx);
-            if value.name.is_none() {
-                value.name = Some(key.clone());
-            }
-            serialize_value_index(value, &mut ctx)?;
-        }
-
-        for (value_idx, value) in function.results.iter_mut().enumerate() {
-            let key = canonicalize_value_name(value, value_idx + function.arguments.len());
-            if value.name.is_none() {
-                value.name = Some(key.clone());
-            }
-            serialize_value_index(value, &mut ctx)?;
-        }
-    }
-
-    Ok(lowered)
+    serialize_module(module)
 }
 
 pub fn serialize_type(ty: &JeffType) -> JeffResult<JeffType> {
@@ -333,27 +376,32 @@ pub fn deserialize_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp>
     })
 }
 
-pub fn serialize_value_index(value: &JeffValue, ctx: &mut SerializationContext) -> JeffResult<usize> {
+pub fn serialize_value_index(value: &mut JeffValue, ctx: &mut SerializationContext) -> JeffResult<usize> {
     let key = value.name.clone().unwrap_or_else(|| format!("v{}", ctx.value_order.len()));
-    let idx = match ctx.value_map.get(&key) {
+    let idx = match ctx.value_to_id.get(&key) {
         Some(&idx) => idx,
         None => {
             let idx = ctx.value_order.len();
             ctx.value_order.push(key.clone());
-            ctx.value_map.insert(key, idx);
+            ctx.value_to_id.insert(key.clone(), idx);
+            ctx.value_map.insert(key.clone(), idx);
             idx
         }
     };
+    if value.index.is_none() {
+        value.index = Some(idx);
+    }
     Ok(idx)
 }
 
 pub fn serialize_op_with_context(op: &JeffOp, ctx: &mut SerializationContext) -> JeffResult<usize> {
-    let key = op.name.clone().unwrap_or_else(|| format!("op{}", ctx.op_map.len()));
-    let idx = match ctx.op_map.get(&key) {
+    let key = op.name.clone().unwrap_or_else(|| format!("op{}", ctx.op_to_id.len()));
+    let idx = match ctx.op_to_id.get(&key) {
         Some(&idx) => idx,
         None => {
-            let idx = ctx.op_map.len();
-            ctx.op_map.insert(key, idx);
+            let idx = ctx.op_to_id.len();
+            ctx.op_to_id.insert(key.clone(), idx);
+            ctx.op_map.insert(key.clone(), idx);
             idx
         }
     };
@@ -364,8 +412,21 @@ pub fn serialize_float_precision(precision: FloatPrecision) -> JeffResult<u8> {
     Ok(precision.bits())
 }
 
+pub fn serialize_metadata(metadata: &[crate::attributes::JeffMeta]) -> JeffResult<Vec<crate::attributes::JeffMeta>> {
+    Ok(metadata.to_vec())
+}
+
+pub fn serialize_string_table(strings: &StringTable) -> JeffResult<StringTable> {
+    let mut table = StringTable::new();
+    for entry in &strings.entries {
+        table.intern(entry.clone());
+    }
+    Ok(table)
+}
+
 pub fn serialize_function(function: &JeffFunction) -> JeffResult<JeffFunction> {
     let mut lowered = function.clone();
+    lowered.metadata = serialize_metadata(&function.metadata)?;
     if lowered.name.is_none() {
         lowered.name = Some(format!("func{}", lowered.arguments.len() + lowered.results.len()));
     }
@@ -373,13 +434,17 @@ pub fn serialize_function(function: &JeffFunction) -> JeffResult<JeffFunction> {
         if value.name.is_none() {
             value.name = Some(format!("arg{idx}"));
         }
-        value.index = Some(idx);
+        if value.index.is_none() {
+            value.index = Some(idx);
+        }
     }
     for (idx, value) in lowered.results.iter_mut().enumerate() {
         if value.name.is_none() {
             value.name = Some(format!("res{idx}"));
         }
-        value.index = Some(idx);
+        if value.index.is_none() {
+            value.index = Some(idx + lowered.arguments.len());
+        }
     }
     Ok(lowered)
 }
@@ -429,6 +494,7 @@ pub fn deserialize_upstream_function(function: &UpstreamFunction<'_>) -> JeffRes
 
 pub fn serialize_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
     let mut lowered = region.clone();
+    lowered.metadata = serialize_metadata(&region.metadata)?;
     if lowered.name.is_none() {
         lowered.name = Some(format!("region{}", lowered.ops.len()));
     }
@@ -494,8 +560,4 @@ pub fn serialize_module_semantic(module: &JeffModule) -> JeffResult<SemanticSeri
 
 pub fn serialize_metadata_summary(op: &JeffOp) -> JeffResult<usize> {
     Ok(op.metadata.len())
-}
-
-pub fn serialize_string_table(strings: &StringTable) -> JeffResult<StringTable> {
-    Ok(strings.clone())
 }

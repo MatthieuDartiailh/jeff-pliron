@@ -17,3 +17,15 @@ pub enum JeffPlironError {
 }
 
 pub type JeffResult<T> = Result<T, JeffPlironError>;
+
+impl From<std::io::Error> for JeffPlironError {
+    fn from(error: std::io::Error) -> Self {
+        JeffPlironError::SerializationFailed(error.to_string())
+    }
+}
+
+impl From<jeff::JeffError> for JeffPlironError {
+    fn from(error: jeff::JeffError) -> Self {
+        JeffPlironError::DeserializationFailed(error.to_string())
+    }
+}
