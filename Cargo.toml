@@ -1,0 +1,14 @@
+[package]
+name = "jeff-pliron"
+version = "0.1.0"
+edition = "2024"
+description = "Pliron dialect bridge for the JEFF binary semantic model"
+license = "BSD-3-Clause"
+
+[dependencies]
+pliron = "0.20.0"
+thiserror = "2"
+jeff = { package = "jeff-format", git = "https://github.com/unitaryfoundation/jeff", tag = "jeff-v0.3.1" }
+
+[dev-dependencies]
+reqwest = { version = "0.12", features = ["blocking", "rustls-tls"] }
