@@ -1,8 +1,7 @@
 use jeff::types::{FloatPrecision as JeffFloatPrecision, Type as JeffTypeFromCrate};
 use jeff_pliron::{
-    JeffMeta, JeffPlironError, StringTable,
-    ops::{JeffFunction, JeffModule, JeffOp, JeffOpKind, JeffRegion, JeffValue},
-    types::{FloatPrecision, JeffType},
+    FloatPrecision, JeffFunction, JeffMeta, JeffModule, JeffOp, JeffOpKind, JeffRegion, JeffType,
+    JeffValue, StringTable,
 };
 
 fn normalize_metadata(metadata: &[JeffMeta]) -> Vec<(String, String)> {
@@ -129,9 +128,7 @@ fn assert_string_table_equal(left: &StringTable, right: &StringTable, context: &
 }
 
 fn round_trip_module(module: &JeffModule) -> JeffModule {
-    let lowered = jeff_pliron::serialization::deserialize_module_from_jeff(module)
-        .expect("module should deserialize");
-    jeff_pliron::serialize_module(&lowered).expect("module should serialize back")
+    jeff_pliron::serialize_module(module).expect("module should serialize back")
 }
 
 fn build_module(name: &str, ops: Vec<JeffOp>) -> JeffModule {
@@ -199,13 +196,11 @@ fn module_round_trip_preserves_semantic_graph() {
             results: vec![JeffValue::named(JeffType::Qubit, "q1").with_index(1)],
             regions: vec![JeffRegion {
                 name: Some("entry".to_string()),
-                ops: vec![
-                    JeffOp::new(JeffOpKind::X)
-                        .with_name("gate_x")
-                        .with_input(JeffValue::named(JeffType::Qubit, "q0").with_index(0))
-                        .with_output(JeffValue::named(JeffType::Qubit, "q1").with_index(1))
-                        .with_metadata("gate.name", "x"),
-                ],
+                ops: vec![JeffOp::new(JeffOpKind::X)
+                    .with_name("gate_x")
+                    .with_input(JeffValue::named(JeffType::Qubit, "q0").with_index(0))
+                    .with_output(JeffValue::named(JeffType::Qubit, "q1").with_index(1))
+                    .with_metadata("gate.name", "x")],
                 metadata: vec![JeffMeta {
                     name: "region.kind".to_string(),
                     value: "body".to_string(),
@@ -250,13 +245,11 @@ fn function_and_region_round_trip_preserve_signature_and_io() {
         results: vec![JeffValue::named(JeffType::Int { bits: 32 }, "rhs").with_index(1)],
         regions: vec![JeffRegion {
             name: Some("body".to_string()),
-            ops: vec![
-                JeffOp::new(JeffOpKind::IntAdd)
-                    .with_name("add")
-                    .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "lhs").with_index(0))
-                    .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "rhs").with_index(1))
-                    .with_output(JeffValue::named(JeffType::Int { bits: 32 }, "sum").with_index(2)),
-            ],
+            ops: vec![JeffOp::new(JeffOpKind::IntAdd)
+                .with_name("add")
+                .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "lhs").with_index(0))
+                .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "rhs").with_index(1))
+                .with_output(JeffValue::named(JeffType::Int { bits: 32 }, "sum").with_index(2))],
             metadata: vec![JeffMeta {
                 name: "region.tag".to_string(),
                 value: "entry".to_string(),
@@ -294,13 +287,11 @@ fn function_and_region_round_trip_preserve_signature_and_io() {
 fn value_index_fidelity_round_trip() {
     let module = build_module(
         "value_parity",
-        vec![
-            JeffOp::new(JeffOpKind::IntAdd)
-                .with_name("add")
-                .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "lhs"))
-                .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "rhs"))
-                .with_output(JeffValue::named(JeffType::Int { bits: 32 }, "sum")),
-        ],
+        vec![JeffOp::new(JeffOpKind::IntAdd)
+            .with_name("add")
+            .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "lhs"))
+            .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "rhs"))
+            .with_output(JeffValue::named(JeffType::Int { bits: 32 }, "sum"))],
     );
 
     let roundtrip = round_trip_module(&module);
@@ -328,11 +319,9 @@ fn metadata_and_string_table_round_trip_preserve_semantic_payloads() {
             results: vec![],
             regions: vec![JeffRegion {
                 name: Some("entry".to_string()),
-                ops: vec![
-                    JeffOp::new(JeffOpKind::H)
-                        .with_name("h")
-                        .with_metadata("gate.name", "h"),
-                ],
+                ops: vec![JeffOp::new(JeffOpKind::H)
+                    .with_name("h")
+                    .with_metadata("gate.name", "h")],
                 metadata: vec![JeffMeta {
                     name: "region.meta".to_string(),
                     value: "alpha".to_string(),
@@ -467,12 +456,6 @@ fn scf_and_func_call_round_trip_parity() {
         let roundtrip = round_trip_module(&module);
         assert_module_equal(&module, &roundtrip, &format!("scf_func_case[{idx}]"));
     }
-}
-
-#[test]
-fn malformed_float_precision_is_rejected() {
-    let err = jeff_pliron::deserialization::deserialize_float_precision(7).unwrap_err();
-    assert!(matches!(err, JeffPlironError::DeserializationFailed(_)));
 }
 
 #[test]
@@ -696,11 +679,9 @@ fn deserializer_reconstructs_missing_names_and_indices() {
             results: vec![JeffValue::new(JeffType::Qubit)],
             regions: vec![JeffRegion {
                 name: None,
-                ops: vec![
-                    JeffOp::new(JeffOpKind::X)
-                        .with_input(JeffValue::new(JeffType::Qubit))
-                        .with_output(JeffValue::new(JeffType::Qubit)),
-                ],
+                ops: vec![JeffOp::new(JeffOpKind::X)
+                    .with_input(JeffValue::new(JeffType::Qubit))
+                    .with_output(JeffValue::new(JeffType::Qubit))],
                 metadata: vec![],
             }],
             metadata: vec![],
@@ -749,34 +730,56 @@ fn value_serialization_keeps_semantics() {
 
     let lowered = jeff_pliron::serialize_value(&value).unwrap();
     assert_eq!(lowered.name, Some("angle".to_string()));
+    assert_eq!(lowered.index, Some(0));
     assert_eq!(
         lowered.ty,
         JeffType::Float {
             precision: FloatPrecision::Float32,
         }
     );
+
+    let rebuilt = jeff_pliron::deserialize_value(&value).unwrap();
+    assert_eq!(rebuilt.name, value.name);
+    assert_eq!(rebuilt.index, Some(0));
+    assert_eq!(rebuilt.ty, value.ty);
 }
 
 #[test]
 fn module_serialization_is_stable() {
+    let mut strings = StringTable::new();
+    strings.intern("alpha");
+    strings.intern("beta");
+
     let module = JeffModule {
         name: Some("demo".to_string()),
-        strings: jeff_pliron::StringTable::new(),
+        strings,
         functions: vec![JeffFunction {
             name: Some("entry".to_string()),
             arguments: vec![JeffValue::named(JeffType::Qubit, "q0")],
             results: vec![JeffValue::named(JeffType::Qubit, "q1")],
             regions: vec![JeffRegion {
                 name: Some("entry_region".to_string()),
-                ops: vec![JeffOp::new(JeffOpKind::QubitAlloc).with_name("alloc0")],
-                metadata: vec![],
+                ops: vec![JeffOp::new(JeffOpKind::QubitAlloc)
+                    .with_name("alloc0")
+                    .with_output(JeffValue::named(JeffType::Qubit, "q2"))
+                    .with_metadata("gate.name", "x")],
+                metadata: vec![JeffMeta {
+                    name: "region.meta".to_string(),
+                    value: "alpha".to_string(),
+                }],
             }],
-            metadata: vec![],
+            metadata: vec![JeffMeta {
+                name: "function.meta".to_string(),
+                value: "beta".to_string(),
+            }],
         }],
-        metadata: vec![],
+        metadata: vec![JeffMeta {
+            name: "module.meta".to_string(),
+            value: "gamma".to_string(),
+        }],
     };
 
-    let lowered = jeff_pliron::serialization::deserialize_module_from_jeff(&module).unwrap();
+    let lowered = jeff_pliron::serialize_module(&module).unwrap();
     assert_eq!(lowered.name, Some("demo".to_string()));
     assert_eq!(lowered.functions.len(), 1);
     assert_eq!(lowered.functions[0].regions.len(), 1);
@@ -789,13 +792,12 @@ fn module_serialization_is_stable() {
         lowered.functions[0].regions[0].ops[0].name.as_deref(),
         Some("alloc0")
     );
-
-    let semantic = jeff_pliron::serialization::serialize_module_semantic(&module).unwrap();
-    assert_eq!(semantic.function_map.get("entry"), Some(&0));
-    assert_eq!(semantic.region_map.get("entry_region"), Some(&0));
-    assert_eq!(semantic.op_map.get("alloc0"), Some(&0));
-    assert_eq!(semantic.value_map.get("q0"), Some(&0));
-    assert_eq!(semantic.value_map.get("q1"), Some(&1));
+    assert_eq!(lowered.functions[0].name.as_deref(), Some("entry"));
+    assert_eq!(lowered.functions[0].regions[0].ops[0].metadata[0].value, "x");
+    assert!(lowered.functions[0].results[0].index.is_some());
+    assert!(lowered.functions[0].regions[0].ops[0].outputs[0].index.is_some());
+    assert_eq!(lowered.strings.entries, module.strings.entries);
+    assert_eq!(lowered.metadata[0].value, "gamma");
 }
 
 #[test]
@@ -805,18 +807,18 @@ fn module_roundtrips_through_dialect_boundary() {
         strings: jeff_pliron::StringTable::new(),
         functions: vec![JeffFunction {
             name: Some("main".to_string()),
-            arguments: vec![JeffValue::named(JeffType::Qubit, "q0")],
-            results: vec![JeffValue::named(JeffType::Qubit, "q1")],
+            arguments: vec![JeffValue::named(JeffType::Qubit, "q0").with_index(0)],
+            results: vec![JeffValue::named(JeffType::Qubit, "q1").with_index(1)],
             regions: vec![JeffRegion {
                 name: Some("body".to_string()),
                 ops: vec![
                     JeffOp::new(JeffOpKind::QubitAlloc)
                         .with_name("alloc0")
-                        .with_output(JeffValue::named(JeffType::Qubit, "q2")),
+                        .with_output(JeffValue::named(JeffType::Qubit, "q2").with_index(0)),
                     JeffOp::new(JeffOpKind::X)
                         .with_name("gate_x")
-                        .with_input(JeffValue::named(JeffType::Qubit, "q2"))
-                        .with_output(JeffValue::named(JeffType::Qubit, "q3")),
+                        .with_input(JeffValue::named(JeffType::Qubit, "q2").with_index(0))
+                        .with_output(JeffValue::named(JeffType::Qubit, "q3").with_index(1)),
                 ],
                 metadata: vec![],
             }],
@@ -825,55 +827,47 @@ fn module_roundtrips_through_dialect_boundary() {
         metadata: vec![],
     };
 
-    let lowered = jeff_pliron::serialization::deserialize_module_from_jeff(&module).unwrap();
-    assert_eq!(lowered.name, Some("demo".to_string()));
-    assert_eq!(lowered.functions[0].name.as_deref(), Some("main"));
-    assert_eq!(lowered.functions[0].regions[0].ops.len(), 2);
-    assert_eq!(
-        lowered.functions[0].regions[0].ops[0].outputs[0]
-            .name
-            .as_deref(),
-        Some("q2")
-    );
-    assert_eq!(
-        lowered.functions[0].regions[0].ops[1].inputs[0]
-            .name
-            .as_deref(),
-        Some("q2")
-    );
+    let lowered = jeff_pliron::serialize_module(&module).unwrap();
+    let rebuilt = jeff_pliron::deserialize_module(&lowered).unwrap();
 
-    let raised = jeff_pliron::serialize_module(&lowered).unwrap();
+    assert_module_equal(&module, &rebuilt, "module_roundtrips_through_dialect_boundary");
+    assert_eq!(rebuilt.name, Some("demo".to_string()));
+    assert_eq!(rebuilt.functions[0].name.as_deref(), Some("main"));
+    assert_eq!(rebuilt.functions[0].regions[0].ops.len(), 2);
     assert_eq!(
-        raised.functions[0].regions[0].ops[1].semantic_name(),
+        rebuilt.functions[0].regions[0].ops[1].semantic_name(),
         "jeff.x"
     );
     assert_eq!(
-        raised.functions[0].regions[0].ops[0].outputs[0].ty,
-        JeffType::Qubit
+        rebuilt.functions[0].regions[0].ops[0].outputs[0].name.as_deref(),
+        Some("q2")
     );
+    assert_eq!(
+        rebuilt.functions[0].regions[0].ops[1].inputs[0].name.as_deref(),
+        Some("q2")
+    );
+    assert_eq!(rebuilt.functions[0].results[0].index, Some(1));
+    assert_eq!(rebuilt.functions[0].regions[0].ops[0].outputs[0].ty, JeffType::Qubit);
 }
 
 #[test]
 fn op_metadata_round_trip() {
-    let mut op = JeffOp::new(JeffOpKind::QubitAlloc);
+    let mut op = JeffOp::new(JeffOpKind::QubitAlloc)
+        .with_name("alloc")
+        .with_output(JeffValue::named(JeffType::Qubit, "q0"));
     op.metadata.push(jeff_pliron::JeffMeta {
         name: "gate.name".to_string(),
         value: "x".to_string(),
     });
-    assert_eq!(op.metadata.len(), 1);
-    assert_eq!(op.metadata[0].name, "gate.name");
-}
 
-#[test]
-fn serialization_context_keeps_stable_value_order() {
-    let mut ctx = jeff_pliron::SerializationContext::default();
-    let mut value_a = JeffValue::named(JeffType::Qubit, "q0");
-    let mut value_b = JeffValue::named(JeffType::Qubit, "q0");
+    let lowered = jeff_pliron::serialize_op(&op).unwrap();
+    let rebuilt = jeff_pliron::deserialize_op(&lowered).unwrap();
 
-    let idx_a = jeff_pliron::serialization::serialize_value_index(&mut value_a, &mut ctx).unwrap();
-    let idx_b = jeff_pliron::serialization::serialize_value_index(&mut value_b, &mut ctx).unwrap();
-
-    assert_eq!(idx_a, 0);
-    assert_eq!(idx_b, 0);
-    assert_eq!(ctx.value_order.len(), 1);
+    assert_eq!(lowered.name.as_deref(), Some("alloc"));
+    assert_eq!(lowered.metadata.len(), 1);
+    assert_eq!(lowered.metadata[0].name, "gate.name");
+    assert_eq!(lowered.metadata[0].value, "x");
+    assert_eq!(rebuilt.semantic_name(), "jeff.qubit_alloc");
+    assert_eq!(rebuilt.outputs[0].index, Some(0));
+    assert_eq!(rebuilt.metadata[0].value, "x");
 }

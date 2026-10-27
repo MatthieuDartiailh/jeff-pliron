@@ -12,10 +12,6 @@ pub struct JeffMeta {
 }
 
 /// Gate-specific metadata attached to a JEFF operation.
-///
-/// This mirrors the semantic shape of the JEFF schema: the gate name is optional,
-/// the operation may be adjoint, powers and controls are tracked explicitly, and
-/// auxiliary metadata remains in a structured list rather than a flattened text blob.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GateMetadata {
     pub gate_name: Option<String>,
@@ -55,5 +51,27 @@ impl StringTable {
 
     pub fn get(&self, idx: usize) -> Option<&str> {
         self.entries.get(idx).map(String::as_str)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::StringTable;
+
+    #[test]
+    fn string_table_interns_unique_entries_and_reuses_ids() {
+        let mut table = StringTable::new();
+
+        let alpha = table.intern("alpha");
+        let beta = table.intern("beta");
+        let alpha_again = table.intern("alpha");
+
+        assert_eq!(alpha, 0);
+        assert_eq!(beta, 1);
+        assert_eq!(alpha_again, alpha);
+        assert_eq!(table.entries, vec!["alpha".to_string(), "beta".to_string()]);
+        assert_eq!(table.get(alpha), Some("alpha"));
+        assert_eq!(table.get(beta), Some("beta"));
+        assert_eq!(table.get(99), None);
     }
 }

@@ -1,21 +1,28 @@
 use std::{collections::HashMap, fs, path::Path};
 
+use jeff::reader::optype::{
+    ControlFlowOp, FuncOp, GateOpType, OpType, QubitOp, QubitRegisterOp, WellKnownGate,
+};
+use jeff::reader::{
+    Function as UpstreamFunction, FunctionIOValue as UpstreamFunctionIOValue,
+    Module as UpstreamModule, Operation as UpstreamOperation, Region as UpstreamRegion,
+    WireValue as UpstreamWireValue,
+};
 use jeff::{Jeff, reader::ReadJeff};
+use jeff::types::Type as UpstreamType;
 
 use crate::{
-    error::JeffResult,
-    ops::{JeffFunction, JeffModule, JeffOp, JeffRegion, JeffValue},
-    types::{FloatPrecision, JeffType},
+    error::{JeffPlironError, JeffResult},
+    ops::{JeffFunction, JeffModule, JeffOp, JeffOpKind, JeffRegion, JeffValue},
+    types::JeffType,
 };
 
 #[derive(Clone, Debug, Default)]
-pub struct DeserializationContext {
+struct DeserializationContext {
     pub string_ids: Vec<String>,
     pub value_ids: HashMap<String, usize>,
     pub op_ids: HashMap<String, usize>,
     pub function_ids: HashMap<String, usize>,
-    pub func_signature_registry: HashMap<String, Vec<usize>>,
-    pub module_metadata: Vec<crate::attributes::JeffMeta>,
     pub name_to_index: HashMap<String, usize>,
     pub value_to_index: HashMap<String, usize>,
     pub op_to_index: HashMap<String, usize>,
@@ -152,7 +159,258 @@ pub fn deserialize_from_file(path: impl AsRef<Path>) -> JeffResult<JeffModule> {
     let bytes = fs::read(path)?;
     let jeff = Jeff::read(bytes.as_slice())?;
     let module = jeff.module();
-    crate::serialization::deserialize_module_from_upstream(&module)
+    deserialize_module_from_upstream(&module)
+}
+
+fn deserialize_upstream_value_like<V: UpstreamValueLike>(value: &V) -> JeffResult<JeffValue> {
+    Ok(JeffValue {
+        ty: JeffType::from(value.jeff_type()),
+        name: None,
+        index: None,
+    })
+}
+
+trait UpstreamValueLike {
+    fn jeff_type(&self) -> UpstreamType;
+}
+
+impl<'a> UpstreamValueLike for UpstreamWireValue<'a> {
+    fn jeff_type(&self) -> UpstreamType {
+        self.ty()
+    }
+}
+
+impl<'a> UpstreamValueLike for UpstreamFunctionIOValue<'a> {
+    fn jeff_type(&self) -> UpstreamType {
+        self.ty()
+    }
+}
+
+pub(crate) fn deserialize_module_from_upstream(module: &UpstreamModule<'_>) -> JeffResult<JeffModule> {
+    let functions = module
+        .functions()
+        .map(|function| deserialize_upstream_function(&function))
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(JeffModule {
+        name: None,
+        strings: crate::attributes::StringTable::new(),
+        functions,
+        metadata: Vec::new(),
+    })
+}
+
+fn deserialize_upstream_function_io(value: UpstreamFunctionIOValue<'_>) -> JeffResult<JeffValue> {
+    deserialize_upstream_value_like(&value)
+}
+
+fn deserialize_upstream_gate_kind(gate_type: GateOpType<'_>) -> JeffOpKind {
+    match gate_type {
+        GateOpType::WellKnown(WellKnownGate::GPhase) => JeffOpKind::GPhase,
+        GateOpType::WellKnown(WellKnownGate::I) => JeffOpKind::I,
+        GateOpType::WellKnown(WellKnownGate::X) => JeffOpKind::X,
+        GateOpType::WellKnown(WellKnownGate::Y) => JeffOpKind::Y,
+        GateOpType::WellKnown(WellKnownGate::Z) => JeffOpKind::Z,
+        GateOpType::WellKnown(WellKnownGate::S) => JeffOpKind::S,
+        GateOpType::WellKnown(WellKnownGate::T) => JeffOpKind::T,
+        GateOpType::WellKnown(WellKnownGate::R1) => JeffOpKind::R1,
+        GateOpType::WellKnown(WellKnownGate::Rx) => JeffOpKind::Rx,
+        GateOpType::WellKnown(WellKnownGate::Ry) => JeffOpKind::Ry,
+        GateOpType::WellKnown(WellKnownGate::Rz) => JeffOpKind::Rz,
+        GateOpType::WellKnown(WellKnownGate::H) => JeffOpKind::H,
+        GateOpType::WellKnown(WellKnownGate::U) => JeffOpKind::U,
+        GateOpType::WellKnown(WellKnownGate::Swap) => JeffOpKind::Swap,
+        GateOpType::WellKnown(_) => JeffOpKind::Custom,
+        GateOpType::Custom { name, .. } => match name.to_ascii_lowercase().as_str() {
+            "cx" | "cnot" => JeffOpKind::X,
+            "swap" => JeffOpKind::Swap,
+            "t" => JeffOpKind::T,
+            "s" => JeffOpKind::S,
+            "h" => JeffOpKind::H,
+            "x" => JeffOpKind::X,
+            "y" => JeffOpKind::Y,
+            "z" => JeffOpKind::Z,
+            "r1" => JeffOpKind::R1,
+            "rx" => JeffOpKind::Rx,
+            "ry" => JeffOpKind::Ry,
+            "rz" => JeffOpKind::Rz,
+            "u" => JeffOpKind::U,
+            _ => JeffOpKind::Custom,
+        },
+        GateOpType::PauliProdRotation { .. } => JeffOpKind::Custom,
+    }
+}
+
+fn deserialize_upstream_op(op: &UpstreamOperation<'_>) -> JeffResult<JeffOp> {
+    let kind = match op.op_type() {
+        OpType::QubitOp(qubit_op) => match qubit_op {
+            QubitOp::Alloc => JeffOpKind::QubitAlloc,
+            QubitOp::Free => JeffOpKind::QubitFree,
+            QubitOp::FreeZero => JeffOpKind::QubitFreeZero,
+            QubitOp::Measure => JeffOpKind::QubitMeasure,
+            QubitOp::MeasureNd => JeffOpKind::QubitMeasureNd,
+            QubitOp::Reset => JeffOpKind::QubitReset,
+            QubitOp::Gate(gate) => deserialize_upstream_gate_kind(gate.gate_type),
+            _ => JeffOpKind::Custom,
+        },
+        OpType::QubitRegisterOp(qureg_op) => match qureg_op {
+            QubitRegisterOp::Alloc => JeffOpKind::QuregAlloc,
+            QubitRegisterOp::Free => JeffOpKind::QuregFree,
+            QubitRegisterOp::FreeZero => JeffOpKind::QuregFreeZero,
+            QubitRegisterOp::ExtractIndex => JeffOpKind::QuregExtractIndex,
+            QubitRegisterOp::InsertIndex => JeffOpKind::QuregInsertIndex,
+            QubitRegisterOp::ExtractSlice => JeffOpKind::QuregExtractSlice,
+            QubitRegisterOp::InsertSlice => JeffOpKind::QuregInsertSlice,
+            QubitRegisterOp::Length => JeffOpKind::QuregLength,
+            QubitRegisterOp::Split => JeffOpKind::QuregSplit,
+            QubitRegisterOp::Join => JeffOpKind::QuregJoin,
+            QubitRegisterOp::Create => JeffOpKind::QuregCreate,
+            _ => JeffOpKind::Custom,
+        },
+        OpType::IntOp(int_op) => match int_op {
+            jeff::reader::optype::IntOp::Const1(_) => JeffOpKind::IntConst,
+            jeff::reader::optype::IntOp::Const8(_) => JeffOpKind::IntConst,
+            jeff::reader::optype::IntOp::Const16(_) => JeffOpKind::IntConst,
+            jeff::reader::optype::IntOp::Const32(_) => JeffOpKind::IntConst,
+            jeff::reader::optype::IntOp::Const64(_) => JeffOpKind::IntConst,
+            jeff::reader::optype::IntOp::Add => JeffOpKind::IntAdd,
+            jeff::reader::optype::IntOp::Sub => JeffOpKind::IntSub,
+            jeff::reader::optype::IntOp::Mul => JeffOpKind::IntMul,
+            jeff::reader::optype::IntOp::DivS | jeff::reader::optype::IntOp::DivU => {
+                JeffOpKind::IntDiv
+            }
+            jeff::reader::optype::IntOp::Pow => JeffOpKind::IntMul,
+            jeff::reader::optype::IntOp::And => JeffOpKind::IntBitAnd,
+            jeff::reader::optype::IntOp::Or => JeffOpKind::IntBitOr,
+            jeff::reader::optype::IntOp::Xor => JeffOpKind::IntBitXor,
+            jeff::reader::optype::IntOp::Not => JeffOpKind::IntBitXor,
+            jeff::reader::optype::IntOp::MinS | jeff::reader::optype::IntOp::MinU => {
+                JeffOpKind::IntCmp
+            }
+            jeff::reader::optype::IntOp::MaxS | jeff::reader::optype::IntOp::MaxU => {
+                JeffOpKind::IntCmp
+            }
+            jeff::reader::optype::IntOp::Eq
+            | jeff::reader::optype::IntOp::LtS
+            | jeff::reader::optype::IntOp::LteS
+            | jeff::reader::optype::IntOp::LtU
+            | jeff::reader::optype::IntOp::LteU => JeffOpKind::IntCmp,
+            jeff::reader::optype::IntOp::Abs => JeffOpKind::IntCmp,
+            jeff::reader::optype::IntOp::RemS | jeff::reader::optype::IntOp::RemU => {
+                JeffOpKind::IntDiv
+            }
+            jeff::reader::optype::IntOp::Shl | jeff::reader::optype::IntOp::Shr => {
+                JeffOpKind::IntBitOr
+            }
+            jeff::reader::optype::IntOp::Select => JeffOpKind::IntSelect,
+            jeff::reader::optype::IntOp::ExtS | jeff::reader::optype::IntOp::ExtU => {
+                JeffOpKind::IntSelect
+            }
+            jeff::reader::optype::IntOp::Trunc => JeffOpKind::IntSelect,
+            jeff::reader::optype::IntOp::ToFloatS | jeff::reader::optype::IntOp::ToFloatU => {
+                JeffOpKind::IntCmp
+            }
+            _ => JeffOpKind::Custom,
+        },
+        OpType::IntArrayOp(_) => JeffOpKind::IntConst,
+        OpType::FloatOp(float_op) => match float_op {
+            jeff::reader::optype::FloatOp::Const32(_)
+            | jeff::reader::optype::FloatOp::Const64(_) => JeffOpKind::FloatConst,
+            jeff::reader::optype::FloatOp::Add | jeff::reader::optype::FloatOp::Sub => {
+                JeffOpKind::FloatAdd
+            }
+            jeff::reader::optype::FloatOp::Mul | jeff::reader::optype::FloatOp::Div => {
+                JeffOpKind::FloatMul
+            }
+            jeff::reader::optype::FloatOp::Eq
+            | jeff::reader::optype::FloatOp::Lt
+            | jeff::reader::optype::FloatOp::Lte
+            | jeff::reader::optype::FloatOp::Max
+            | jeff::reader::optype::FloatOp::Min => JeffOpKind::FloatCmp,
+            _ => JeffOpKind::FloatConst,
+        },
+        OpType::FloatArrayOp(_) => JeffOpKind::FloatConst,
+        OpType::ControlFlowOp(control_flow) => match *control_flow {
+            ControlFlowOp::Switch(_) => JeffOpKind::ScfSwitch,
+            ControlFlowOp::For { .. } => JeffOpKind::ScfFor,
+            ControlFlowOp::While { .. } => JeffOpKind::ScfWhile,
+        },
+        OpType::FuncOp(FuncOp { .. }) => JeffOpKind::FuncCall,
+        _ => JeffOpKind::Custom,
+    };
+
+    let mut inputs = Vec::new();
+    for value in op.inputs() {
+        let value = value.map_err(|err| JeffPlironError::InvalidValueMapping(err.to_string()))?;
+        inputs.push(deserialize_upstream_value_like(&value)?);
+    }
+
+    let mut outputs = Vec::new();
+    for value in op.outputs() {
+        let value = value.map_err(|err| JeffPlironError::InvalidValueMapping(err.to_string()))?;
+        outputs.push(deserialize_upstream_value_like(&value)?);
+    }
+
+    Ok(JeffOp {
+        kind,
+        name: None,
+        inputs,
+        outputs,
+        metadata: Vec::new(),
+    })
+}
+
+fn deserialize_upstream_function(function: &UpstreamFunction<'_>) -> JeffResult<JeffFunction> {
+    let name = Some(function.name().to_string());
+    let mut arguments = Vec::new();
+    let mut results = Vec::new();
+    let mut regions = Vec::new();
+
+    match function {
+        UpstreamFunction::Declaration(decl) => {
+            for value in decl.input_types() {
+                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
+                arguments.push(deserialize_upstream_function_io(value)?);
+            }
+            for value in decl.output_types() {
+                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
+                results.push(deserialize_upstream_function_io(value)?);
+            }
+        }
+        UpstreamFunction::Definition(def) => {
+            for value in def.input_types() {
+                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
+                arguments.push(deserialize_upstream_function_io(value)?);
+            }
+            for value in def.output_types() {
+                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
+                results.push(deserialize_upstream_function_io(value)?);
+            }
+            regions.push(deserialize_upstream_region(&def.body())?);
+        }
+    }
+
+    Ok(JeffFunction {
+        name,
+        arguments,
+        results,
+        regions,
+        metadata: Vec::new(),
+    })
+}
+
+fn deserialize_upstream_region(region: &UpstreamRegion<'_>) -> JeffResult<JeffRegion> {
+    let ops = region
+        .operations()
+        .map(|op| {
+            deserialize_upstream_op(&op)
+                .map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(JeffRegion {
+        name: None,
+        ops,
+        metadata: Vec::new(),
+    })
 }
 
 pub fn deserialize_value(value: &JeffValue) -> JeffResult<JeffValue> {
@@ -197,16 +455,6 @@ pub fn deserialize_op(op: &JeffOp) -> JeffResult<JeffOp> {
 
 pub fn deserialize_type(ty: &JeffType) -> JeffResult<JeffType> {
     Ok(ty.clone())
-}
-
-pub fn deserialize_float_precision(bits: u8) -> JeffResult<FloatPrecision> {
-    match bits {
-        32 => Ok(FloatPrecision::Float32),
-        64 => Ok(FloatPrecision::Float64),
-        _ => Err(crate::error::JeffPlironError::DeserializationFailed(
-            format!("unsupported float precision bits: {bits}"),
-        )),
-    }
 }
 
 pub fn deserialize_function(function: &JeffFunction) -> JeffResult<JeffFunction> {
@@ -259,10 +507,3 @@ pub fn deserialize_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
     Ok(rebuilt)
 }
 
-pub fn deserialize_module_semantic(module: &JeffModule) -> JeffResult<JeffModule> {
-    deserialize_module(module)
-}
-
-pub fn deserialize_string_table(entries: &[String]) -> JeffResult<Vec<String>> {
-    Ok(entries.to_vec())
-}
