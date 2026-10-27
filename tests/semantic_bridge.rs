@@ -196,11 +196,13 @@ fn module_round_trip_preserves_semantic_graph() {
             results: vec![JeffValue::named(JeffType::Qubit, "q1").with_index(1)],
             regions: vec![JeffRegion {
                 name: Some("entry".to_string()),
-                ops: vec![JeffOp::new(JeffOpKind::X)
-                    .with_name("gate_x")
-                    .with_input(JeffValue::named(JeffType::Qubit, "q0").with_index(0))
-                    .with_output(JeffValue::named(JeffType::Qubit, "q1").with_index(1))
-                    .with_metadata("gate.name", "x")],
+                ops: vec![
+                    JeffOp::new(JeffOpKind::X)
+                        .with_name("gate_x")
+                        .with_input(JeffValue::named(JeffType::Qubit, "q0").with_index(0))
+                        .with_output(JeffValue::named(JeffType::Qubit, "q1").with_index(1))
+                        .with_metadata("gate.name", "x"),
+                ],
                 metadata: vec![JeffMeta {
                     name: "region.kind".to_string(),
                     value: "body".to_string(),
@@ -245,11 +247,13 @@ fn function_and_region_round_trip_preserve_signature_and_io() {
         results: vec![JeffValue::named(JeffType::Int { bits: 32 }, "rhs").with_index(1)],
         regions: vec![JeffRegion {
             name: Some("body".to_string()),
-            ops: vec![JeffOp::new(JeffOpKind::IntAdd)
-                .with_name("add")
-                .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "lhs").with_index(0))
-                .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "rhs").with_index(1))
-                .with_output(JeffValue::named(JeffType::Int { bits: 32 }, "sum").with_index(2))],
+            ops: vec![
+                JeffOp::new(JeffOpKind::IntAdd)
+                    .with_name("add")
+                    .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "lhs").with_index(0))
+                    .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "rhs").with_index(1))
+                    .with_output(JeffValue::named(JeffType::Int { bits: 32 }, "sum").with_index(2)),
+            ],
             metadata: vec![JeffMeta {
                 name: "region.tag".to_string(),
                 value: "entry".to_string(),
@@ -287,11 +291,13 @@ fn function_and_region_round_trip_preserve_signature_and_io() {
 fn value_index_fidelity_round_trip() {
     let module = build_module(
         "value_parity",
-        vec![JeffOp::new(JeffOpKind::IntAdd)
-            .with_name("add")
-            .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "lhs"))
-            .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "rhs"))
-            .with_output(JeffValue::named(JeffType::Int { bits: 32 }, "sum"))],
+        vec![
+            JeffOp::new(JeffOpKind::IntAdd)
+                .with_name("add")
+                .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "lhs"))
+                .with_input(JeffValue::named(JeffType::Int { bits: 32 }, "rhs"))
+                .with_output(JeffValue::named(JeffType::Int { bits: 32 }, "sum")),
+        ],
     );
 
     let roundtrip = round_trip_module(&module);
@@ -319,9 +325,11 @@ fn metadata_and_string_table_round_trip_preserve_semantic_payloads() {
             results: vec![],
             regions: vec![JeffRegion {
                 name: Some("entry".to_string()),
-                ops: vec![JeffOp::new(JeffOpKind::H)
-                    .with_name("h")
-                    .with_metadata("gate.name", "h")],
+                ops: vec![
+                    JeffOp::new(JeffOpKind::H)
+                        .with_name("h")
+                        .with_metadata("gate.name", "h"),
+                ],
                 metadata: vec![JeffMeta {
                     name: "region.meta".to_string(),
                     value: "alpha".to_string(),
@@ -679,9 +687,11 @@ fn deserializer_reconstructs_missing_names_and_indices() {
             results: vec![JeffValue::new(JeffType::Qubit)],
             regions: vec![JeffRegion {
                 name: None,
-                ops: vec![JeffOp::new(JeffOpKind::X)
-                    .with_input(JeffValue::new(JeffType::Qubit))
-                    .with_output(JeffValue::new(JeffType::Qubit))],
+                ops: vec![
+                    JeffOp::new(JeffOpKind::X)
+                        .with_input(JeffValue::new(JeffType::Qubit))
+                        .with_output(JeffValue::new(JeffType::Qubit)),
+                ],
                 metadata: vec![],
             }],
             metadata: vec![],
@@ -759,10 +769,12 @@ fn module_serialization_is_stable() {
             results: vec![JeffValue::named(JeffType::Qubit, "q1")],
             regions: vec![JeffRegion {
                 name: Some("entry_region".to_string()),
-                ops: vec![JeffOp::new(JeffOpKind::QubitAlloc)
-                    .with_name("alloc0")
-                    .with_output(JeffValue::named(JeffType::Qubit, "q2"))
-                    .with_metadata("gate.name", "x")],
+                ops: vec![
+                    JeffOp::new(JeffOpKind::QubitAlloc)
+                        .with_name("alloc0")
+                        .with_output(JeffValue::named(JeffType::Qubit, "q2"))
+                        .with_metadata("gate.name", "x"),
+                ],
                 metadata: vec![JeffMeta {
                     name: "region.meta".to_string(),
                     value: "alpha".to_string(),
@@ -793,9 +805,16 @@ fn module_serialization_is_stable() {
         Some("alloc0")
     );
     assert_eq!(lowered.functions[0].name.as_deref(), Some("entry"));
-    assert_eq!(lowered.functions[0].regions[0].ops[0].metadata[0].value, "x");
+    assert_eq!(
+        lowered.functions[0].regions[0].ops[0].metadata[0].value,
+        "x"
+    );
     assert!(lowered.functions[0].results[0].index.is_some());
-    assert!(lowered.functions[0].regions[0].ops[0].outputs[0].index.is_some());
+    assert!(
+        lowered.functions[0].regions[0].ops[0].outputs[0]
+            .index
+            .is_some()
+    );
     assert_eq!(lowered.strings.entries, module.strings.entries);
     assert_eq!(lowered.metadata[0].value, "gamma");
 }
@@ -830,7 +849,11 @@ fn module_roundtrips_through_dialect_boundary() {
     let lowered = jeff_pliron::serialize_module(&module).unwrap();
     let rebuilt = jeff_pliron::deserialize_module(&lowered).unwrap();
 
-    assert_module_equal(&module, &rebuilt, "module_roundtrips_through_dialect_boundary");
+    assert_module_equal(
+        &module,
+        &rebuilt,
+        "module_roundtrips_through_dialect_boundary",
+    );
     assert_eq!(rebuilt.name, Some("demo".to_string()));
     assert_eq!(rebuilt.functions[0].name.as_deref(), Some("main"));
     assert_eq!(rebuilt.functions[0].regions[0].ops.len(), 2);
@@ -839,15 +862,22 @@ fn module_roundtrips_through_dialect_boundary() {
         "jeff.x"
     );
     assert_eq!(
-        rebuilt.functions[0].regions[0].ops[0].outputs[0].name.as_deref(),
+        rebuilt.functions[0].regions[0].ops[0].outputs[0]
+            .name
+            .as_deref(),
         Some("q2")
     );
     assert_eq!(
-        rebuilt.functions[0].regions[0].ops[1].inputs[0].name.as_deref(),
+        rebuilt.functions[0].regions[0].ops[1].inputs[0]
+            .name
+            .as_deref(),
         Some("q2")
     );
     assert_eq!(rebuilt.functions[0].results[0].index, Some(1));
-    assert_eq!(rebuilt.functions[0].regions[0].ops[0].outputs[0].ty, JeffType::Qubit);
+    assert_eq!(
+        rebuilt.functions[0].regions[0].ops[0].outputs[0].ty,
+        JeffType::Qubit
+    );
 }
 
 #[test]

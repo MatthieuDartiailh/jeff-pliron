@@ -8,8 +8,8 @@ use jeff::reader::{
     Module as UpstreamModule, Operation as UpstreamOperation, Region as UpstreamRegion,
     WireValue as UpstreamWireValue,
 };
-use jeff::{Jeff, reader::ReadJeff};
 use jeff::types::Type as UpstreamType;
+use jeff::{Jeff, reader::ReadJeff};
 
 use crate::{
     error::{JeffPlironError, JeffResult},
@@ -186,7 +186,9 @@ impl<'a> UpstreamValueLike for UpstreamFunctionIOValue<'a> {
     }
 }
 
-pub(crate) fn deserialize_module_from_upstream(module: &UpstreamModule<'_>) -> JeffResult<JeffModule> {
+pub(crate) fn deserialize_module_from_upstream(
+    module: &UpstreamModule<'_>,
+) -> JeffResult<JeffModule> {
     let functions = module
         .functions()
         .map(|function| deserialize_upstream_function(&function))
@@ -368,21 +370,25 @@ fn deserialize_upstream_function(function: &UpstreamFunction<'_>) -> JeffResult<
     match function {
         UpstreamFunction::Declaration(decl) => {
             for value in decl.input_types() {
-                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
+                let value =
+                    value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
                 arguments.push(deserialize_upstream_function_io(value)?);
             }
             for value in decl.output_types() {
-                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
+                let value =
+                    value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
                 results.push(deserialize_upstream_function_io(value)?);
             }
         }
         UpstreamFunction::Definition(def) => {
             for value in def.input_types() {
-                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
+                let value =
+                    value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
                 arguments.push(deserialize_upstream_function_io(value)?);
             }
             for value in def.output_types() {
-                let value = value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
+                let value =
+                    value.map_err(|err| JeffPlironError::DeserializationFailed(err.to_string()))?;
                 results.push(deserialize_upstream_function_io(value)?);
             }
             regions.push(deserialize_upstream_region(&def.body())?);
@@ -506,4 +512,3 @@ pub fn deserialize_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
     }
     Ok(rebuilt)
 }
-

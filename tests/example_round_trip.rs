@@ -147,7 +147,8 @@ fn example_module_round_trips_through_pliron_dialect() {
     let bytes = fs::read(path).expect("example JEFF file should be available");
     let _ = bytes;
 
-    let lowered = jeff_pliron::deserialize_from_file(path).expect("module should deserialize from file");
+    let lowered =
+        jeff_pliron::deserialize_from_file(path).expect("module should deserialize from file");
     assert!(
         !lowered.functions.is_empty(),
         "module should contain at least one function"

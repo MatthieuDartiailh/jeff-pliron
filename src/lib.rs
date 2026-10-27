@@ -11,7 +11,7 @@ pub use deserialization::{
     deserialize_from_file, deserialize_function, deserialize_jeff_module, deserialize_module,
     deserialize_op, deserialize_region, deserialize_type, deserialize_value,
 };
-pub use dialect::{jeff_dialect_name, register_jeff_dialect, JEFF_DIALECT_NAME};
+pub use dialect::{JEFF_DIALECT_NAME, jeff_dialect_name, register_jeff_dialect};
 pub use error::{JeffPlironError, JeffResult};
 pub use ops::{
     FuncCallOp, FuncDeclOp, FuncDefOp, JeffFunction, JeffModule, JeffOp, JeffOpKind, JeffRegion,

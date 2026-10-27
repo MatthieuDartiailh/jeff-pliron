@@ -169,7 +169,10 @@ pub fn serialize_op(op: &JeffOp) -> JeffResult<JeffOp> {
     Ok(lowered)
 }
 
-fn serialize_value_index(value: &mut JeffValue, ctx: &mut SerializationContext) -> JeffResult<usize> {
+fn serialize_value_index(
+    value: &mut JeffValue,
+    ctx: &mut SerializationContext,
+) -> JeffResult<usize> {
     let key = value
         .name
         .clone()
@@ -249,7 +252,10 @@ pub fn serialize_region(region: &JeffRegion) -> JeffResult<JeffRegion> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ops::{JeffOp, JeffOpKind}, types::FloatPrecision};
+    use crate::{
+        ops::{JeffOp, JeffOpKind},
+        types::FloatPrecision,
+    };
 
     #[test]
     fn serialize_value_assigns_default_index_without_dropping_semantics() {
@@ -302,8 +308,14 @@ mod tests {
         let lowered = serialize_module(&module).unwrap();
         assert_eq!(lowered.name.as_deref(), Some("demo"));
         assert_eq!(lowered.functions[0].name.as_deref(), Some("func0"));
-        assert_eq!(lowered.functions[0].regions[0].name.as_deref(), Some("region0"));
-        assert_eq!(lowered.functions[0].regions[0].ops[0].name.as_deref(), Some("op0"));
+        assert_eq!(
+            lowered.functions[0].regions[0].name.as_deref(),
+            Some("region0")
+        );
+        assert_eq!(
+            lowered.functions[0].regions[0].ops[0].name.as_deref(),
+            Some("op0")
+        );
         assert_eq!(lowered.metadata[0].value, "gamma");
         assert_eq!(lowered.functions[0].metadata[0].value, "beta");
         assert_eq!(lowered.functions[0].regions[0].metadata[0].value, "alpha");
@@ -311,4 +323,3 @@ mod tests {
         assert_eq!(lowered.functions[0].results[0].index, Some(1));
     }
 }
-
